@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -15,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,8 +39,6 @@ public class Job implements Serializable{
 	
 	@Column(name="name", columnDefinition="nvarchar(255)")
 	private String name;
-	
-	//photos
 	
 	@Enumerated(EnumType.STRING)
 	@Column(name="jobtype", columnDefinition="nvarchar(255)")
@@ -69,7 +69,17 @@ public class Job implements Serializable{
 	private int quantity;
 	
 	//relationship
+	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name="owner")
 	private Employer employer;
+	
+	@ManyToOne
+	private SaveJob save;
+	
+	@OneToMany(mappedBy="job", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<JobApplication> jobApplications;
+	
+	@OneToMany(mappedBy="job", cascade = CascadeType.ALL)
+	private List<Appointment> appointments;
 }

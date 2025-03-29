@@ -7,9 +7,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -44,4 +47,23 @@ public class Report implements Serializable{
 	@Enumerated(EnumType.STRING)
 	@Column(name="status", columnDefinition="nvarchar(255)")
 	private EResponseStatus status;
+	
+	//relationship
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_applicant", referencedColumnName = "username")
+    private Applicant applicant;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_applicant", referencedColumnName = "username")
+    private Applicant reportedapplicant;
+    
+	@ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_employer", referencedColumnName = "username")
+    private Employer employer;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_employer", referencedColumnName = "username")
+    private Employer reportedemployer;
+
 }

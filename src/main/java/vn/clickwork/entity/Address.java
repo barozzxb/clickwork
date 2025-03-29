@@ -7,6 +7,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,4 +43,17 @@ public class Address implements Serializable{
 	@Column(name="detail", columnDefinition="nvarchar(255)")
 	private String detail;
 	
+	//relationship
+	
+	@ManyToOne
+	@JoinColumn(name = "applicant_id", referencedColumnName = "id")
+	private Applicant applicant;
+	
+	@ManyToOne
+	@JoinColumn(name = "employer_id", referencedColumnName = "id")
+	private Employer employer;
+	
+	@ManyToOne
+	@JoinColumn(name = "admin_id", referencedColumnName = "id")
+	private Admin admin;
 }
