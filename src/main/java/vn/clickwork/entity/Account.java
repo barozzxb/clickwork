@@ -36,6 +36,15 @@ public class Account implements Serializable{
 	@Column(name="role", columnDefinition="varchar(255)", nullable=false)
 	private ERole role;
 	
+	
+	
+	public Account(String username, String password, ERole role) {
+		super();
+		this.username = username;
+		this.password = password;
+		this.role = role;
+	}
+
 	//relationship
 	
 	@OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
