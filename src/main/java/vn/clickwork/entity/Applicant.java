@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,8 +52,9 @@ public class Applicant extends User implements Serializable{
 	@OneToMany(cascade = CascadeType.ALL, mappedBy = "applicant")
 	protected List<Address> addresses;
 	
-	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name="username", referencedColumnName = "username")
+	@JsonBackReference
 	private Account account;
 	
 	@OneToOne(mappedBy = "applicant", cascade = CascadeType.ALL)

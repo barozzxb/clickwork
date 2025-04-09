@@ -68,6 +68,8 @@ public class Job implements Serializable{
 	@Column(name="quantity", columnDefinition="int")
 	private int quantity;
 	
+	@Column(name="isactive", columnDefinition="boolean")
+	private boolean isActive;
 	//relationship
 	
 	@ManyToOne(fetch = FetchType.LAZY)

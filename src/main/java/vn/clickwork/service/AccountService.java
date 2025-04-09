@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import vn.clickwork.entity.Account;
+import vn.clickwork.model.LoginModel;
+import vn.clickwork.model.RegisterModel;
+import vn.clickwork.model.Response;
 
 public interface AccountService {
 
@@ -19,9 +22,9 @@ public interface AccountService {
 
 	<S extends Account> S save(S entity);
 
-	Account login(String username, String pasword);
+	Response login(LoginModel loginModel);
 	
-	boolean register(Account account);
+	Response register(RegisterModel model);
 
 	Optional<Account> findByUsername(String username);
 }

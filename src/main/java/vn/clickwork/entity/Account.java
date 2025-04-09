@@ -2,6 +2,8 @@ package vn.clickwork.entity;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,12 +50,15 @@ public class Account implements Serializable{
 	//relationship
 	
 	@OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+	@JsonManagedReference
 	private Applicant applicant;
 
 	@OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+	@JsonManagedReference
 	private Employer employer;
 
 	@OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+	@JsonManagedReference
 	private Admin admin;
 
 }

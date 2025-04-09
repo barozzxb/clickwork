@@ -7,7 +7,7 @@ public enum ERole {
 
 	ADMIN("Quản trị viên"),
 	APPLICANT("Ứng viên"),
-	EMPLOYEE("Nhà tuyển dụng");
+	EMPLOYER("Nhà tuyển dụng");
 
 	private final String value;
 	

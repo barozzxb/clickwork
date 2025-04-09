@@ -7,14 +7,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import vn.clickwork.entity.Account;
+import vn.clickwork.entity.Applicant;
+import vn.clickwork.entity.Employer;
+import vn.clickwork.enumeration.ERole;
+import vn.clickwork.model.LoginModel;
+import vn.clickwork.model.RegisterModel;
+import vn.clickwork.model.Response;
 import vn.clickwork.repository.AccountRepository;
+import vn.clickwork.repository.ApplicantRepository;
+import vn.clickwork.repository.EmployerRepository;
 import vn.clickwork.service.AccountService;
+import vn.clickwork.util.PasswordUtil;
 
 @Service
 public class AccountServiceImpl implements AccountService{
 
 	@Autowired
 	AccountRepository accRepo;
+	
+	@Autowired
+	ApplicantRepository appRepo;
+	
+	@Autowired
+	EmployerRepository empRepo;
+	
+	@Autowired
+	PasswordUtil passwordUtil;
 
 	public <S extends Account> S save(S entity) {
 		return accRepo.save(entity);
@@ -51,25 +69,40 @@ public class AccountServiceImpl implements AccountService{
 	}
 
 	@Override
-	public Account login(String username, String pasword) {
-		Optional<Account> acc = this.findByUsername(username);
-		if (acc.isPresent()) {
-			return acc.get();
-		} else {
-			return null;
+	public Response login(LoginModel loginModel) {
+		Optional<Account> optAcc = this.findByUsername(loginModel.getUsername());
+		if (optAcc.isPresent()) {
+			Account acc = optAcc.get();
+			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword()))
+				return new Response(true, "Đăng nhập thành công", acc);
+			else {
+				return new Response(false, "Mật khẩu không chính xác", null);
+			}
 		}
+		return new Response(false, "Tài khoản không tồn tại, vui lòng thử lại hoặc tạo tài khoản mới", null);
 	}
 
 	@Override
-	public boolean register(Account account) {
-		Optional<Account> acc = this.findByUsername(account.getUsername());
-		if (acc.isPresent()) {
-			return false;
+	public Response register(RegisterModel model) {
+		Optional<Account> optAcc = this.findByUsername(model.getUsername());
+		if (optAcc.isPresent()) {
+			return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác", null);
 		} else {
-			accRepo.save(account);
-			return true;
+			String hashedPassword = passwordUtil.hashPassword(model.getPassword());
+			Account acc = new Account(model.getUsername(), hashedPassword, model.getRole());
+			if (model.getRole() == ERole.APPLICANT) {
+				Applicant applicant = new Applicant();
+				applicant.setAccount(acc);
+				applicant.setEmail(model.getEmail());
+				acc.setApplicant(applicant);
+			} else if (model.getRole() == ERole.EMPLOYER) {
+				 Employer employer = new Employer();
+				 employer.setAccount(acc);
+				 employer.setEmail(model.getEmail());
+				 acc.setEmployer(employer);
+			}
+			accRepo.save(acc);
+			return new Response(true, "Đăng ký thành công", acc);
 		}
 	}
-	
-	
 }

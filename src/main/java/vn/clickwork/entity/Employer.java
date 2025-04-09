@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -66,6 +68,7 @@ public class Employer extends User implements Serializable{
 
 	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	@JoinColumn(name="username", referencedColumnName = "username")
+	@JsonBackReference
 	private Account account;
 	
 	@OneToMany(mappedBy="employer", fetch = FetchType.LAZY)
