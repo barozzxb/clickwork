@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -103,23 +102,6 @@ public class JobServiceImpl implements JobService{
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 	            .body(new Response(false, "Cập nhật công việc thất bại", null));
 	    }
-	}
-
-	@Override
-	public ResponseEntity<Response> findAll(Specification<Job> spec) {
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobRepo.findAll(spec)), HttpStatus.OK);
-	}
-	
-	@Override
-	public ResponseEntity<Response> findNewJobs() {
-		List<Job> newjobs = jobRepo.findAll();
-		if (newjobs.isEmpty()) {
-			return new ResponseEntity<Response>(new Response(true, "Danh sách công việc trống", null), HttpStatus.OK);
-		}
-		if (newjobs.size() > 3) {
-			newjobs = newjobs.subList(0, 3);
-		}
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", newjobs), HttpStatus.OK);
 	}
 }
 

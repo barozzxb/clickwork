@@ -83,13 +83,13 @@ public class EmailService {
     public ResponseEntity<Response> verifyOTP(OTPRequest otpModel) {
         OTPCode entry = otpMap.get(otpModel.getEmail());
         if (entry == null) {
-            return ResponseEntity.status(401).body(new Response(false, "Mã xác nhận không hợp lệ hoặc đã hết hạn", null));
+            return ResponseEntity.status(401).body(new Response(false, "OTP không hợp lệ", null));
         }
 
         long now = System.currentTimeMillis();
         if ((now - entry.getCreatedTime()) > EXPIRE_TIME) {
             otpMap.remove(otpModel.getEmail());
-            return ResponseEntity.status(401).body(new Response(false, "Mã xác nhận không hợp lệ hoặc đã hết hạn", null));
+            return ResponseEntity.status(401).body(new Response(false, "OTP đã hết hạn", null));
         }
 
         if (!entry.getCode().equals(otpModel.getInputOtp())) {
@@ -98,7 +98,7 @@ public class EmailService {
                 otpMap.remove(otpModel.getEmail());
                 return ResponseEntity.status(401).body(new Response(false, "Đã quá số lần thử OTP", null));
             }
-            return ResponseEntity.status(401).body(new Response(false, "Mã xác nhận không hợp lệ hoặc đã hết hạn", null));
+            return ResponseEntity.status(401).body(new Response(false, "OTP không chính xác", null));
         }
 
         otpMap.remove(otpModel.getEmail());

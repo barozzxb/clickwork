@@ -5,14 +5,13 @@ import lombok.Getter;
 @Getter
 public enum EResponseStatus {
 
-	RESPONDED("Đã phản hồi"),
-	NO_RESPOND("Chưa phản hồi");
-	
-	private final String value;
+    RESPONDED("Đã phản hồi"),
+    NO_RESPOND("Chưa phản hồi"),
+    PENDING("Chờ xử lý");  // Thêm giá trị PENDING
 
-	private EResponseStatus(String value) {
-		this.value = value;
-	}
-	
-	
+    private final String value;
+
+    private EResponseStatus(String value) {
+        this.value = value;
+    }
 }
