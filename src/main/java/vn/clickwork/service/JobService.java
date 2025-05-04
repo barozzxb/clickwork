@@ -1,9 +1,11 @@
 package vn.clickwork.service;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 
 import vn.clickwork.entity.Job;
 import vn.clickwork.model.Response;
+import vn.clickwork.service.impl.JobSpecification;
 
 public interface JobService {
 
@@ -18,9 +20,13 @@ public interface JobService {
 	ResponseEntity<Response> findById(Long id);
 
 	ResponseEntity<Response> findAll();
+	
+	ResponseEntity<Response> findAll(Specification<Job> spec);
 
 	ResponseEntity<Response> save(Job entity);
 	
 	ResponseEntity<Response> updateJob(Job entity);
+
+	ResponseEntity<Response> findNewJobs();
 
 }
