@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.SupportResponseRequest;
@@ -22,8 +23,14 @@ public class SupportAPI {
     private SupportService supportService;
 
     @GetMapping
-    public ResponseEntity<Response> getAllSupportRequests() {
-        return ResponseEntity.ok(supportService.getAllSupportRequests());
+    public ResponseEntity<Response> getAllSupportRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir,
+            @RequestParam(defaultValue = "") String status) {
+        return ResponseEntity.ok(supportService.getAllSupportRequests(page, size, search, sortBy, sortDir, status));
     }
 
     @GetMapping("/{id}")
