@@ -80,6 +80,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers("/api/jobs/**").permitAll()
 						.requestMatchers("/uploads/**").permitAll()
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
 						.anyRequest().authenticated()
 				)
 				.authenticationProvider(authenticationProvider())

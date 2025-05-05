@@ -15,6 +15,7 @@ import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Applicant;
 import vn.clickwork.entity.Employer;
 import vn.clickwork.enumeration.ERole;
+import vn.clickwork.enumeration.EAccountStatus;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.LoginRequest;
 import vn.clickwork.model.request.RegisterRequest;
@@ -92,13 +93,14 @@ public class AccountServiceImpl implements AccountService {
 				// Tạo JWT token cho tài khoản
 				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
 
-				Map<String, Object> body = new HashMap<>();
+				Map<String, Object> data = new HashMap<>();
 //	            body.put("username", acc.getUsername());
 //	            body.put("role", acc.getRole());
-				body.put("token", token);
+	            data.put("token", token);
 
-				return new Response(true, "Đăng nhập thành công", body);
-			} else {
+				return new Response(true, "Đăng nhập thành công", data);
+			}
+			else {
 				return new Response(false, "Sai thông tin đăng nhập", null);
 			}
 		}
@@ -110,6 +112,7 @@ public class AccountServiceImpl implements AccountService {
 
 		Optional<Account> optAcc = this.findByUsername(model.getUsername());
 		if (optAcc.isPresent()) {
+      
 			return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác",
 					null);
 		}
@@ -121,6 +124,7 @@ public class AccountServiceImpl implements AccountService {
 
 		String hashedPassword = passwordUtil.hashPassword(model.getPassword());
 		Account acc = new Account(model.getUsername(), hashedPassword, model.getRole());
+    acc.setStatus(EAccountStatus.ACTIVE);
 		if (model.getRole() == ERole.APPLICANT) {
 			Applicant applicant = new Applicant();
 			applicant.setAccount(acc);
@@ -186,4 +190,5 @@ public class AccountServiceImpl implements AccountService {
 		}
 		return null;
 	}
+
 }

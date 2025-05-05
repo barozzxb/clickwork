@@ -47,7 +47,9 @@ public class Support implements Serializable{
 	@Enumerated(EnumType.STRING)
 	@Column(name="status", columnDefinition="nvarchar(255)")
 	private EResponseStatus status;
-	
+
+	@Column(name="response", columnDefinition="nvarchar(500)")
+	private String response;
 	//relationship
 	
 	@ManyToOne(fetch = FetchType.LAZY)

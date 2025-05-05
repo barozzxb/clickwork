@@ -1,6 +1,7 @@
 package vn.clickwork.entity;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -15,6 +16,8 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import vn.clickwork.enumeration.EAccountStatus;
 import vn.clickwork.enumeration.ERole;
 
 @AllArgsConstructor
@@ -37,7 +40,14 @@ public class Account implements Serializable{
 	@Enumerated(EnumType.STRING)
 	@Column(name="role", columnDefinition="varchar(255)", nullable=false)
 	private ERole role;
-	
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status", columnDefinition="varchar(255)", nullable=false)
+	private EAccountStatus status;
+
+	@Column(name = "created_at", updatable = false)
+	@CreationTimestamp
+	private LocalDateTime createdAt;
 	
 	
 	public Account(String username, String password, ERole role) {

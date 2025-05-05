@@ -21,6 +21,8 @@ import vn.clickwork.model.request.ApplicantDetailRequest;
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.ApplicantRepository;
 import vn.clickwork.service.ApplicantService;
+import vn.clickwork.enumeration.EAccountStatus;
+
 
 @Service
 public class ApplicantServiceImpl implements ApplicantService {
