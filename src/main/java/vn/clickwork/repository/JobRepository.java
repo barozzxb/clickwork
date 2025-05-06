@@ -21,5 +21,12 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
 	@Query("SELECT new vn.clickwork.model.dto.JobFieldCountDTO(j.field, COUNT(j)) FROM Job j GROUP BY j.field")
 	List<JobFieldCountDTO> countJobsByField();
 
+	long countByIsActiveTrue();
+
+	long countByIsActiveFalse();
+
+	@Query("SELECT j.jobtype AS type, COUNT(j) AS count FROM Job j GROUP BY j.jobtype")
+	List<Object[]> countJobsByType();
+
 }
 
