@@ -41,7 +41,6 @@ import vn.clickwork.repository.EmployerRepository;
 import vn.clickwork.repository.AdminRepository;
 import vn.clickwork.repository.ReportRepository;
 import vn.clickwork.service.AccountService;
-import vn.clickwork.service.impl.EmailService;
 import vn.clickwork.util.JwtUtils;
 import vn.clickwork.util.PasswordUtil;
 
@@ -50,7 +49,6 @@ public class AccountServiceImpl implements AccountService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
 
-	// Simple email regex for validation
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(
 			"^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
 	);
@@ -771,6 +769,256 @@ public class AccountServiceImpl implements AccountService {
 		} catch (Exception e) {
 			logger.error("Lỗi khi tạo tài khoản quản trị viên: {}", e.getMessage(), e);
 			return new Response(false, "Không thể tạo tài khoản quản trị viên: " + e.getMessage(), null);
+		}
+	}
+
+	@Override
+	public Response getSystemEmails(String role, String search) {
+		try {
+			logger.info("Fetching system emails for role: {}, search: {}", role, search);
+			List<Map<String, String>> emails = new ArrayList<>();
+
+			// Prepare search pattern
+			String searchPattern = search != null && !search.trim().isEmpty() ? "%" + search.toLowerCase() + "%" : null;
+
+			if (role == null || role.trim().isEmpty() || role.equalsIgnoreCase("ALL")) {
+				// Fetch all emails
+				List<Applicant> applicants = searchPattern != null ?
+						appRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
+						appRepo.findAll();
+				emails.addAll(applicants.stream()
+						.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
+						.map(a -> {
+							Map<String, String> emailData = new HashMap<>();
+							emailData.put("email", a.getEmail());
+							emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
+							emailData.put("role", "APPLICANT");
+							return emailData;
+						})
+						.collect(Collectors.toList()));
+
+				List<Employer> employers = searchPattern != null ?
+						empRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
+						empRepo.findAll();
+				emails.addAll(employers.stream()
+						.filter(e -> e.getEmail() != null && !e.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(e.getEmail()).matches())
+						.map(e -> {
+							Map<String, String> emailData = new HashMap<>();
+							emailData.put("email", e.getEmail());
+							emailData.put("fullname", e.getFullname() != null ? e.getFullname() : "");
+							emailData.put("role", "EMPLOYER");
+							return emailData;
+						})
+						.collect(Collectors.toList()));
+
+				List<Admin> admins = searchPattern != null ?
+						adminRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
+						adminRepo.findAll();
+				emails.addAll(admins.stream()
+						.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
+						.map(a -> {
+							Map<String, String> emailData = new HashMap<>();
+							emailData.put("email", a.getEmail());
+							emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
+							emailData.put("role", "ADMIN");
+							return emailData;
+						})
+						.collect(Collectors.toList()));
+			} else if (role.equalsIgnoreCase("INACTIVE")) {
+				// Fetch emails for inactive accounts
+				List<Account> inactiveAccounts = accRepo.findAllByStatus(EAccountStatus.INACTIVE);
+				emails.addAll(inactiveAccounts.stream()
+						.map(account -> {
+							if (account.getApplicant() != null && (searchPattern == null ||
+									account.getApplicant().getEmail().toLowerCase().contains(searchPattern.replace("%", "")) ||
+									(account.getApplicant().getFullname() != null && account.getApplicant().getFullname().toLowerCase().contains(searchPattern.replace("%", ""))))) {
+								Map<String, String> emailData = new HashMap<>();
+								emailData.put("email", account.getApplicant().getEmail());
+								emailData.put("fullname", account.getApplicant().getFullname() != null ? account.getApplicant().getFullname() : "");
+								emailData.put("role", "APPLICANT");
+								return emailData;
+							} else if (account.getEmployer() != null && (searchPattern == null ||
+									account.getEmployer().getEmail().toLowerCase().contains(searchPattern.replace("%", "")) ||
+									(account.getEmployer().getFullname() != null && account.getEmployer().getFullname().toLowerCase().contains(searchPattern.replace("%", ""))))) {
+								Map<String, String> emailData = new HashMap<>();
+								emailData.put("email", account.getEmployer().getEmail());
+								emailData.put("fullname", account.getEmployer().getFullname() != null ? account.getEmployer().getFullname() : "");
+								emailData.put("role", "EMPLOYER");
+								return emailData;
+							} else if (account.getAdmin() != null && (searchPattern == null ||
+									account.getAdmin().getEmail().toLowerCase().contains(searchPattern.replace("%", "")) ||
+									(account.getAdmin().getFullname() != null && account.getAdmin().getFullname().toLowerCase().contains(searchPattern.replace("%", ""))))) {
+								Map<String, String> emailData = new HashMap<>();
+								emailData.put("email", account.getAdmin().getEmail());
+								emailData.put("fullname", account.getAdmin().getFullname() != null ? account.getAdmin().getFullname() : "");
+								emailData.put("role", "ADMIN");
+								return emailData;
+							}
+							return null;
+						})
+						.filter(data -> data != null && EMAIL_PATTERN.matcher(data.get("email")).matches())
+						.collect(Collectors.toList()));
+			} else {
+				// Fetch emails by role
+				ERole eRole;
+				try {
+					eRole = ERole.valueOf(role.toUpperCase());
+				} catch (IllegalArgumentException e) {
+					return new Response(false, "Vai trò không hợp lệ: " + role, null);
+				}
+
+				if (eRole == ERole.APPLICANT) {
+					List<Applicant> applicants = searchPattern != null ?
+							appRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
+							appRepo.findAll();
+					emails.addAll(applicants.stream()
+							.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
+							.map(a -> {
+								Map<String, String> emailData = new HashMap<>();
+								emailData.put("email", a.getEmail());
+								emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
+								emailData.put("role", "APPLICANT");
+								return emailData;
+							})
+							.collect(Collectors.toList()));
+				} else if (eRole == ERole.EMPLOYER) {
+					List<Employer> employers = searchPattern != null ?
+							empRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
+							empRepo.findAll();
+					emails.addAll(employers.stream()
+							.filter(e -> e.getEmail() != null && !e.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(e.getEmail()).matches())
+							.map(e -> {
+								Map<String, String> emailData = new HashMap<>();
+								emailData.put("email", e.getEmail());
+								emailData.put("fullname", e.getFullname() != null ? e.getFullname() : "");
+								emailData.put("role", "EMPLOYER");
+								return emailData;
+							})
+							.collect(Collectors.toList()));
+				} else if (eRole == ERole.ADMIN) {
+					List<Admin> admins = searchPattern != null ?
+							adminRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
+							adminRepo.findAll();
+					emails.addAll(admins.stream()
+							.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
+							.map(a -> {
+								Map<String, String> emailData = new HashMap<>();
+								emailData.put("email", a.getEmail());
+								emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
+								emailData.put("role", "ADMIN");
+								return emailData;
+							})
+							.collect(Collectors.toList()));
+				}
+			}
+
+			// Remove duplicates and sort
+			List<Map<String, String>> uniqueEmails = emails.stream()
+					.collect(Collectors.toMap(
+							map -> map.get("email"),
+							map -> map,
+							(existing, replacement) -> existing
+					))
+					.values()
+					.stream()
+					.sorted((a, b) -> a.get("email").compareTo(b.get("email")))
+					.collect(Collectors.toList());
+			return new Response(true, "Lấy danh sách email thành công", uniqueEmails);
+		} catch (Exception e) {
+			logger.error("Lỗi khi lấy danh sách email: {}", e.getMessage(), e);
+			return new Response(false, "Không thể lấy danh sách email: " + e.getMessage(), null);
+		}
+	}
+
+	@Override
+	public Response sendAdminEmail(String subject, String message, List<String> emails, String role) {
+		try {
+			logger.info("Sending admin email: subject='{}', role='{}', emails={}", subject, role, emails);
+
+			// Validate inputs
+			if (subject == null || subject.trim().isEmpty()) {
+				return new Response(false, "Tiêu đề email không được để trống", null);
+			}
+			if (message == null || message.trim().isEmpty()) {
+				return new Response(false, "Nội dung email không được để trống", null);
+			}
+
+			List<String> recipients = new ArrayList<>();
+
+			// If emails are provided, validate and use them
+			if (emails != null && !emails.isEmpty()) {
+				for (String email : emails) {
+					if (email != null && !email.trim().isEmpty() && EMAIL_PATTERN.matcher(email).matches()) {
+						recipients.add(email);
+					} else {
+						logger.warn("Email không hợp lệ: {}", email);
+					}
+				}
+			}
+
+			// If role is provided, fetch emails by role
+			if (role != null && !role.trim().isEmpty()) {
+				Response emailResponse = getSystemEmails(role, null);
+				if (!emailResponse.isStatus()) {
+					return emailResponse;
+				}
+				List<Map<String, String>> roleEmails = (List<Map<String, String>>) emailResponse.getBody();
+				recipients.addAll(roleEmails.stream()
+						.map(map -> map.get("email"))
+						.collect(Collectors.toList()));
+			}
+
+			// Remove duplicates
+			recipients = recipients.stream().distinct().collect(Collectors.toList());
+
+			if (recipients.isEmpty()) {
+				return new Response(false, "Không có email hợp lệ để gửi", null);
+			}
+
+			// Build HTML content
+			String htmlContent = String.format(
+					"<!DOCTYPE html>" +
+							"<html lang=\"en\">" +
+							"<head>" +
+							"  <meta charset=\"UTF-8\"/>" +
+							"  <style>" +
+							"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
+							"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
+							"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
+							"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
+							"  </style>" +
+							"</head>" +
+							"<body>" +
+							"  <div class=\"container\">" +
+							"    <div class=\"header\">" +
+							"      <h2>ClickWork</h2>" +
+							"    </div>" +
+							"    <div class=\"content\">" +
+							"      <p>%s</p>" +
+							"    </div>" +
+							"    <div class=\"footer\">" +
+							"      © 2025 ClickWork. All rights reserved." +
+							"    </div>" +
+							"  </div>" +
+							"</body>" +
+							"</html>",
+					message.replace("\n", "<br>")
+			);
+
+			// Send emails
+			for (String email : recipients) {
+				try {
+					emailService.sendEmail(email, subject, htmlContent);
+					logger.info("Gửi email đến: {}", email);
+				} catch (Exception e) {
+					logger.warn("Không thể gửi email đến {}: {}", email, e.getMessage());
+				}
+			}
+
+			return new Response(true, "Gửi email thành công", null);
+		} catch (Exception e) {
+			logger.error("Lỗi khi gửi email: {}", e.getMessage(), e);
+			return new Response(false, "Không thể gửi email: " + e.getMessage(), null);
 		}
 	}
 }
