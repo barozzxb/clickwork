@@ -30,4 +30,10 @@ public interface AccountRepository extends JpaRepository<Account, String>{
 	List<Account> findByRole(ERole role);
 
 	List<Account> findAllByStatus(EAccountStatus status);
+
+	@Query("SELECT a.role AS role, COUNT(a) AS count FROM Account a GROUP BY a.role")
+	List<Object[]> countAccountsByRole();
+
+	@Query("SELECT a.status AS status, COUNT(a) AS count FROM Account a GROUP BY a.status")
+	List<Object[]> countAccountsByStatus();
 }
