@@ -20,7 +20,8 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:3000",
                         "http://localhost:9000",
                         "https://clickwork.vn",
-                        "https://www.clickwork.vn"
+                        "https://www.clickwork.vn",
+                        "https://clickwork-react.vercel.app"
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
