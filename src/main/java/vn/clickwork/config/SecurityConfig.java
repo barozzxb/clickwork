@@ -12,9 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 import vn.clickwork.filter.JwtFilter;
 import vn.clickwork.service.impl.CustomAccountDetailsService;
 import vn.clickwork.util.JwtUtils;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -22,17 +24,22 @@ public class SecurityConfig {
 
 	private final CustomAccountDetailsService accDetailServ;
 	private final JwtUtils jwtUtils;
+	private final CorsConfigurationSource corsConfigurationSource;
 
-	public SecurityConfig(CustomAccountDetailsService accDetailServ, JwtUtils jwtUtils) {
+	public SecurityConfig(
+			CustomAccountDetailsService accDetailServ,
+			JwtUtils jwtUtils,
+			CorsConfigurationSource corsConfigurationSource) {
 		this.accDetailServ = accDetailServ;
 		this.jwtUtils = jwtUtils;
+		this.corsConfigurationSource = corsConfigurationSource;
 	}
-	
+
 	@Bean
 	public JwtFilter jwtFilter() {
 		return new JwtFilter(jwtUtils, accDetailServ);
 	}
-	
+
 	@Bean
 	public DaoAuthenticationProvider authenticationProvider() {
 		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -40,17 +47,18 @@ public class SecurityConfig {
 		authProvider.setPasswordEncoder(passwordEncoder());
 		return authProvider;
 	}
-	
+
 	@Bean
 	public AuthenticationManager authManager(AuthenticationConfiguration configuration) throws Exception {
 		return configuration.getAuthenticationManager();
 	}
-	
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
+<<<<<<< HEAD
 	 @Bean
 	    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 	        http
@@ -70,3 +78,26 @@ public class SecurityConfig {
 	        return http.build();
 	    }
 }
+=======
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http
+				.csrf(csrf -> csrf.disable())
+				.cors(cors -> cors.configurationSource(corsConfigurationSource))
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/api/jobs/**").permitAll()
+						.requestMatchers("/uploads/**").permitAll()
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						.requestMatchers("/api/support/**").hasRole("ADMIN")
+						.anyRequest().authenticated()
+				)
+				.authenticationProvider(authenticationProvider())
+				.addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
+
+		return http.build();
+	}
+}
+>>>>>>> branch 'master' of https://github.com/barozzxb/clickwork

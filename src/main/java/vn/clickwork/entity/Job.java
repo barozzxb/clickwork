@@ -65,7 +65,7 @@ public class Job implements Serializable{
 	@Column(name="benefit", columnDefinition="nvarchar(5000)")
 	private String benefit;
 	
-	@Column(name="filed", columnDefinition="nvarchar(255)")
+	@Column(name="field", columnDefinition="nvarchar(255)")
 	private String field;
 	
 	@Column(name="quantity", columnDefinition="int")

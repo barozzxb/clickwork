@@ -104,4 +104,18 @@ public class EmailService {
         otpMap.remove(otpModel.getEmail());
         return ResponseEntity.ok(new Response(true, "Xác thực thành công", null));
     }
+
+    public void sendEmail(String to, String subject, String htmlContent) {
+        try {
+            MimeMessage message = sender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            sender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Không thể gửi email: " + e.getMessage());
+        }
+    }
 }
