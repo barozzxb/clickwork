@@ -58,11 +58,12 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
-<<<<<<< HEAD
+
 	 @Bean
 	    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 	        http
 	            .csrf(csrf -> csrf.disable())
+              .cors(cors -> cors.configurationSource(corsConfigurationSource))
 	            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 	            .authorizeHttpRequests(auth -> auth
 	                .requestMatchers("/api/auth/**").permitAll() // Các endpoint đăng nhập, đăng ký không cần auth
@@ -71,6 +72,9 @@ public class SecurityConfig {
 	                .requestMatchers("/api/applicant/**").hasRole("APPLICANT")
 	                .requestMatchers("/api/employer/**").hasRole("EMPLOYER")
 	                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                  .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						      .requestMatchers("/api/admin/**").hasRole("ADMIN")
+						      .requestMatchers("/api/support/**").hasRole("ADMIN")
 	                .anyRequest().authenticated()
 	            )
 	            .authenticationProvider(authenticationProvider())
@@ -78,26 +82,3 @@ public class SecurityConfig {
 	        return http.build();
 	    }
 }
-=======
-	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http
-				.csrf(csrf -> csrf.disable())
-				.cors(cors -> cors.configurationSource(corsConfigurationSource))
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**").permitAll()
-						.requestMatchers("/api/jobs/**").permitAll()
-						.requestMatchers("/uploads/**").permitAll()
-						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						.requestMatchers("/api/admin/**").hasRole("ADMIN")
-						.requestMatchers("/api/support/**").hasRole("ADMIN")
-						.anyRequest().authenticated()
-				)
-				.authenticationProvider(authenticationProvider())
-				.addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
-
-		return http.build();
-	}
-}
->>>>>>> branch 'master' of https://github.com/barozzxb/clickwork
