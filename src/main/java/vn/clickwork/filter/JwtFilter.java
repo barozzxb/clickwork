@@ -36,10 +36,27 @@ public class JwtFilter extends OncePerRequestFilter {
                 String username = jwtUtils.getUsernameFromJwtToken(jwt);
                 var userDetails = accountDetailsService.loadUserByUsername(username);
 
-                var authentication = new UsernamePasswordAuthenticationToken(
+                /*var authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));*/
 
+
+		 Key key = Keys.hmacShaKeyFor(jwtUtils.getSecretKeyBytes()); // bạn có thể thêm method getSecretKeyBytes() vào JwtUtils
+	        Claims claims = Jwts.parserBuilder()
+	        	.setSigningKey(key)
+	                .build()
+	                .parseClaimsJws(jwt)
+	                .getBody();
+	
+	            String role = claims.get("role", String.class);
+	            List<GrantedAuthority> authorities = List.of(
+	                new SimpleGrantedAuthority("ROLE_" + role) // ví dụ: ROLE_APPLICANT
+	            );
+
+		var authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, authorities);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+		    
                 // Đặt vào SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
