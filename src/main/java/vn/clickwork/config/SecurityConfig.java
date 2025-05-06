@@ -60,6 +60,9 @@ public class SecurityConfig {
 	                .requestMatchers("/api/auth/**").permitAll() // Các endpoint đăng nhập, đăng ký không cần auth
 	                .requestMatchers("/api/jobs/**").permitAll() // Các endpoint công việc không cần auth
 	                .requestMatchers("/uploads/**").permitAll() // Các endpoint upload không cần auth
+	                .requestMatchers("/api/applicant/**").hasRole("APPLICANT")
+	                .requestMatchers("/api/employer/**").hasRole("EMPLOYER")
+	                .requestMatchers("/api/admin/**").hasRole("ADMIN")
 	                .anyRequest().authenticated()
 	            )
 	            .authenticationProvider(authenticationProvider())
