@@ -5,6 +5,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import vn.clickwork.entity.Account;
+import vn.clickwork.enumeration.EAccountStatus;
 import vn.clickwork.enumeration.ERole;
 
 import java.util.Collection;
@@ -52,6 +53,6 @@ public class AccountDetails implements UserDetails {
     }
     @Override
     public boolean isEnabled() {
-        return true;
+        return account.getStatus() == EAccountStatus.ACTIVE;
     }
 }

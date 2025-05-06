@@ -9,5 +9,6 @@ import vn.clickwork.entity.Admin;
 public interface AdminRepository extends JpaRepository<Admin, Long> {
 	
 	Admin findByEmail(String email);
+	Admin findByAccountUsername(String username);
 
 }

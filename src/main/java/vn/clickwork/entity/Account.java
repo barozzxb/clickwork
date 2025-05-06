@@ -1,6 +1,8 @@
 package vn.clickwork.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -15,6 +17,8 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import vn.clickwork.enumeration.EAccountStatus;
 import vn.clickwork.enumeration.ERole;
 
 @AllArgsConstructor
@@ -30,16 +34,25 @@ public class Account implements Serializable{
 	@Id
 	@Column(name="username", columnDefinition="varchar(255)")
 	private String username;
-	
+
 	@Column(name="password", columnDefinition="varchar(255)", nullable=false)
 	private String password;
-	
+
 	@Enumerated(EnumType.STRING)
 	@Column(name="role", columnDefinition="varchar(255)", nullable=false)
 	private ERole role;
-	
-	
-	
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status", columnDefinition="varchar(255)", nullable=false)
+	private EAccountStatus status;
+
+	@Column(name = "created_at", updatable = false)
+	@CreationTimestamp
+	private LocalDateTime createdAt;
+
+	@Column(name = "suspended_until")
+	private Timestamp suspendedUntil;
+
 	public Account(String username, String password, ERole role) {
 		super();
 		this.username = username;
@@ -48,7 +61,7 @@ public class Account implements Serializable{
 	}
 
 	//relationship
-	
+
 	@OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
 	@JsonManagedReference
 	private Applicant applicant;

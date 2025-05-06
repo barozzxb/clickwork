@@ -6,7 +6,9 @@ import lombok.Getter;
 public enum EResponseStatus {
 
 	RESPONDED("Đã phản hồi"),
-	NO_RESPOND("Chưa phản hồi");
+	NO_RESPOND("Chưa phản hồi"),
+	PENDING("Chờ xử lý"),
+	DISMISSED("Đã từ chối");
 	
 	private final String value;
 
