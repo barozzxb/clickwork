@@ -9,7 +9,7 @@ import vn.clickwork.model.dto.StatisticsDTO;
 import vn.clickwork.service.ReportService;
 
 @RestController
-@RequestMapping("/api/v1/admin/reports")
+@RequestMapping("/api/admin/reports")
 public class ReportAPI {
 
     @Autowired
