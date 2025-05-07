@@ -18,59 +18,47 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
 
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
-import vn.clickwork.entity.Applicant;
-import vn.clickwork.entity.Employer;
 import vn.clickwork.entity.Notification;
-import vn.clickwork.entity.Support;
 import vn.clickwork.entity.Admin;
 import vn.clickwork.enumeration.ENotiType;
-import vn.clickwork.enumeration.EResponseStatus;
-import vn.clickwork.model.Response;
 import vn.clickwork.model.dto.SupportResponseDTO;
 import vn.clickwork.model.request.SupportResponseRequest;
-import vn.clickwork.repository.ApplicantRepository;
-import vn.clickwork.repository.EmployerRepository;
 import vn.clickwork.repository.NotificationRepository;
-import vn.clickwork.repository.SupportRepository;
 import vn.clickwork.repository.AdminRepository;
-import vn.clickwork.service.SupportService;
 
 
 @Service
 public class SupportServiceImpl implements SupportService {
 
 
-    private final SupportRepository supportRepository;
-    private final ApplicantRepository applicantRepository;
-    private final EmployerRepository employerRepository;
+//    private final SupportRepository supportRepository;
+//    private final ApplicantRepository applicantRepository;
+//    private final EmployerRepository employerRepository;
 
-    @Autowired
-    public SupportServiceImpl(SupportRepository supportRepository,
-                              ApplicantRepository applicantRepository,
-                              EmployerRepository employerRepository) {
-        this.supportRepository = supportRepository;
-        this.applicantRepository = applicantRepository;
-        this.employerRepository = employerRepository;
-    }
+//    @Autowired
+//    public SupportServiceImpl(SupportRepository supportRepository,
+//                              ApplicantRepository applicantRepository,
+//                              EmployerRepository employerRepository) {
+//        this.supportRepository = supportRepository;
+//        this.applicantRepository = applicantRepository;
+//        this.employerRepository = employerRepository;
+//    }
 
     @Override
     public Response createSupportRequest(SupportRequestDTO dto, String actorUsername) {
@@ -96,7 +84,7 @@ public class SupportServiceImpl implements SupportService {
         supportRepository.save(support);
         return new Response(true, "Yêu cầu hỗ trợ đã được gửi thành công!", null);
     }
-}
+
 
     private static final Logger logger = LoggerFactory.getLogger(SupportServiceImpl.class);
 
