@@ -56,4 +56,8 @@ public class JwtUtils {
 			return false;
 		}
 	}
+
+	public byte[] getSecretKeyBytes() {
+		return jwtSecret.getBytes(StandardCharsets.UTF_8);
+	}
 }

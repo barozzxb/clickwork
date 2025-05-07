@@ -29,6 +29,8 @@ import vn.clickwork.repository.SupportRepository;
 import vn.clickwork.service.AdminService;
 import vn.clickwork.service.ApplicantService;
 import vn.clickwork.service.EmployerService;
+import vn.clickwork.enumeration.EAccountStatus;
+
 
 @Service
 public class ApplicantServiceImpl implements ApplicantService {
