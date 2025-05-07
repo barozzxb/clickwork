@@ -18,7 +18,7 @@ import org.springframework.data.jpa.repository.Query;
 import vn.clickwork.model.dto.JobFieldCountDTO;
 
 @Repository
-public interface JobRepository extends JpaRepository<Job, Long>{
+public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
 
 	List<Job> findByTags(String tags);
 

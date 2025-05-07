@@ -1,5 +1,6 @@
 package vn.clickwork.service;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 
 import vn.clickwork.entity.Job;
@@ -22,5 +23,8 @@ public interface JobService {
 	ResponseEntity<Response> save(Job entity);
 	
 	ResponseEntity<Response> updateJob(Job entity);
+	
+	ResponseEntity<Response> findAll(Specification<Job> spec);
 
+	ResponseEntity<Response> findNewJobs();
 }
