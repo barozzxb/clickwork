@@ -20,7 +20,8 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:3000",
                         "http://localhost:9000",
                         "https://clickwork.vn",
-                        "https://www.clickwork.vn"
+                        "https://www.clickwork.vn",
+                        "https://clickwork-react.vercel.app/"
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
@@ -35,7 +36,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:3000",
                 "http://localhost:9000",
                 "https://clickwork.vn",
-                "https://www.clickwork.vn"
+                "https://www.clickwork.vn",
+                "https://clickwork-react.vercel.app/"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -55,7 +57,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:3000",
                 "http://localhost:9000",
                 "https://clickwork.vn",
-                "https://www.clickwork.vn"
+                "https://www.clickwork.vn",
+                "https://clickwork-react.vercel.app/"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
