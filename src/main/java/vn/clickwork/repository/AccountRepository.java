@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import vn.clickwork.entity.Account;
 import vn.clickwork.enumeration.EAccountStatus;
+import vn.clickwork.enumeration.ERole;
 
 @Repository
 public interface AccountRepository extends JpaRepository<Account, String>{
@@ -25,4 +26,14 @@ public interface AccountRepository extends JpaRepository<Account, String>{
 	List<Object[]> countAccountsByMonth();
 
     Page<Account> findAll(Specification<Account> spec, Pageable pageable);
+
+	List<Account> findByRole(ERole role);
+
+	List<Account> findAllByStatus(EAccountStatus status);
+
+	@Query("SELECT a.role AS role, COUNT(a) AS count FROM Account a GROUP BY a.role")
+	List<Object[]> countAccountsByRole();
+
+	@Query("SELECT a.status AS status, COUNT(a) AS count FROM Account a GROUP BY a.status")
+	List<Object[]> countAccountsByStatus();
 }

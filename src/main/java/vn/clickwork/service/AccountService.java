@@ -1,12 +1,15 @@
 package vn.clickwork.service;
 
+
+import org.springframework.http.ResponseEntity;
+
 import vn.clickwork.entity.Account;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.LoginRequest;
 import vn.clickwork.model.request.RegisterRequest;
+
 import vn.clickwork.model.request.ReportResolveRequest;
 import vn.clickwork.model.request.ResetPasswordRequest;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,4 +36,6 @@ public interface AccountService {
 	Response resolveReport(Long id, ReportResolveRequest request);
 	Response updateAccount(String username, String role, String status);
 	Response createAdminAccount(RegisterRequest model);
+	Response getSystemEmails(String role, String search);
+	Response sendAdminEmail(String subject, String message, List<String> emails, String role);
 }
