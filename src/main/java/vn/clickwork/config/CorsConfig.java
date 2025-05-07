@@ -21,11 +21,7 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:9000",
                         "https://clickwork.vn",
                         "https://www.clickwork.vn",
-<<<<<<< HEAD
-                        "https://clickwork-react.vercel.app/"
-=======
                         "https://clickwork-react.vercel.app"
->>>>>>> branch 'master' of https://github.com/barozzxb/clickwork
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
@@ -41,11 +37,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:9000",
                 "https://clickwork.vn",
                 "https://www.clickwork.vn",
-<<<<<<< HEAD
                 "https://clickwork-react.vercel.app/"
-=======
-                "https://clickwork-react.vercel.app"
->>>>>>> branch 'master' of https://github.com/barozzxb/clickwork
+
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -66,11 +59,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:9000",
                 "https://clickwork.vn",
                 "https://www.clickwork.vn",
-<<<<<<< HEAD
                 "https://clickwork-react.vercel.app/"
-=======
-                "https://clickwork-react.vercel.app"
->>>>>>> branch 'master' of https://github.com/barozzxb/clickwork
+
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

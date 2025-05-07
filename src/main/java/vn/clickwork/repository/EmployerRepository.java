@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
+import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Employer;
 
 import java.util.List;
