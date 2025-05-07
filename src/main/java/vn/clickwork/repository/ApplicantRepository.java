@@ -1,5 +1,7 @@
 package vn.clickwork.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,5 +17,8 @@ public interface ApplicantRepository extends JpaRepository<Applicant, Long>{
 	
 	Applicant findByAccount(Account account);
 
-    List<Applicant> findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(String searchPattern, String searchPattern1);
+  Applicant findByAccount_Username(String username);
+
+  List<Applicant> findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(String searchPattern, String searchPattern1);
+
 }

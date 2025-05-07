@@ -3,6 +3,7 @@ package vn.clickwork.service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
+import vn.clickwork.dto.SupportRequestDTO;
 import vn.clickwork.entity.Applicant;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.ApplicantDetailRequest;
@@ -26,6 +27,8 @@ public interface ApplicantService {
 	ResponseEntity<Response> findByUsername(String username);
 
 	ResponseEntity<Response> updateAvatar(String username, MultipartFile file);
+
+    ResponseEntity<Response> requestSupport(SupportRequestDTO supportRequestDTO);
 
 
 }

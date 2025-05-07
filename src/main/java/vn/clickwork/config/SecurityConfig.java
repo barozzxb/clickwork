@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 import org.springframework.web.cors.CorsConfigurationSource;
 import vn.clickwork.filter.JwtFilter;
 import vn.clickwork.service.impl.CustomAccountDetailsService;
@@ -34,12 +35,12 @@ public class SecurityConfig {
 		this.jwtUtils = jwtUtils;
 		this.corsConfigurationSource = corsConfigurationSource;
 	}
-
+	
 	@Bean
 	public JwtFilter jwtFilter() {
 		return new JwtFilter(jwtUtils, accDetailServ);
 	}
-
+	
 	@Bean
 	public DaoAuthenticationProvider authenticationProvider() {
 		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -47,12 +48,12 @@ public class SecurityConfig {
 		authProvider.setPasswordEncoder(passwordEncoder());
 		return authProvider;
 	}
-
+	
 	@Bean
 	public AuthenticationManager authManager(AuthenticationConfiguration configuration) throws Exception {
 		return configuration.getAuthenticationManager();
 	}
-
+	
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -69,6 +70,10 @@ public class SecurityConfig {
 	                .requestMatchers("/api/auth/**").permitAll() // Các endpoint đăng nhập, đăng ký không cần auth
 	                .requestMatchers("/api/jobs/**").permitAll() // Các endpoint công việc không cần auth
 	                .requestMatchers("/uploads/**").permitAll() // Các endpoint upload không cần auth
+	                .requestMatchers("/api/support/**").permitAll() // Các endpoint upload không cần auth
+	                .requestMatchers("/api/saved-jobs/**").permitAll() // 
+	                .requestMatchers("/api/applications/**").permitAll() // 
+
 	                .requestMatchers("/api/applicant/**").hasRole("APPLICANT")
 	                .requestMatchers("/api/employer/**").hasRole("EMPLOYER")
 	                .requestMatchers("/api/admin/**").hasRole("ADMIN")
