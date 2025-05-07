@@ -21,8 +21,5 @@ COPY --from=build /app/target/*.jar clickwork.jar
 # ✅ Copy thư mục uploads (nếu nó nằm cùng cấp với Dockerfile)
 COPY uploads/ uploads/
 
-<<<<<<< HEAD
+
 ENTRYPOINT ["java", "-jar", "clickwork.jar"]
-=======
-ENTRYPOINT ["java", "-jar", "clickwork.jar"]
->>>>>>> branch 'master' of https://github.com/barozzxb/clickwork
