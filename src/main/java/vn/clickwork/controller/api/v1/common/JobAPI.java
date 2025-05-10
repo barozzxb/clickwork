@@ -23,12 +23,12 @@ public class JobAPI {
 	JobService jobServ;
 	
 	@GetMapping
-	public ResponseEntity<Response> listJobs(){
+	public ResponseEntity<?> listJobs(){
 		return jobServ.findAll();
 	}
 	
 	@GetMapping("/id={id}")
-	public ResponseEntity<Response> getJob(@PathVariable("id") Long id){
+	public ResponseEntity<?> getJob(@PathVariable("id") Long id){
 		return jobServ.findById(id);
 	}
 	

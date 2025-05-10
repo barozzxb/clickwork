@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.stereotype.Service;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
+
 import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Applicant;
 import vn.clickwork.entity.Employer;
@@ -33,8 +37,10 @@ import vn.clickwork.model.dto.AccountDTO;
 import vn.clickwork.model.dto.ReportDTO;
 import vn.clickwork.model.request.LoginRequest;
 import vn.clickwork.model.request.RegisterRequest;
+
 import vn.clickwork.model.request.ReportResolveRequest;
 import vn.clickwork.model.request.ResetPasswordRequest;
+
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.ApplicantRepository;
 import vn.clickwork.repository.EmployerRepository;
@@ -45,7 +51,7 @@ import vn.clickwork.util.JwtUtils;
 import vn.clickwork.util.PasswordUtil;
 
 @Service
-public class AccountServiceImpl implements AccountService {
+public class AccountServiceImpl implements AccountService{
 
 	private static final Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
 
@@ -55,13 +61,13 @@ public class AccountServiceImpl implements AccountService {
 
 	@Autowired
 	AccountRepository accRepo;
-
+	
 	@Autowired
 	ApplicantRepository appRepo;
-
+	
 	@Autowired
 	EmployerRepository empRepo;
-
+	
 	@Autowired
 	AdminRepository adminRepo;
 
@@ -70,7 +76,7 @@ public class AccountServiceImpl implements AccountService {
 
 	@Autowired
 	PasswordUtil passwordUtil;
-
+	
 	@Autowired
 	JwtUtils jwtUtils;
 
@@ -113,6 +119,23 @@ public class AccountServiceImpl implements AccountService {
 
 	@Override
 	public Response login(LoginRequest loginModel) {
+/* baochau
+		Optional<Account> optAcc = this.findByUsername(loginModel.getUsername());
+		if (optAcc.isPresent()) {
+			Account acc = optAcc.get();
+			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword())) {
+				// Tạo JWT token cho tài khoản
+				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
+				
+				Map<String, Object> body = new HashMap<>();
+//	            body.put("username", acc.getUsername());
+//	            body.put("role", acc.getRole());
+	            body.put("token", token);
+	            
+				return new Response(true, "Đăng nhập thành công", body);
+			}
+			else {
+*/
 		if (loginModel.getUsername() == null || loginModel.getPassword() == null) {
 			return new Response(false, "Vui lòng nhập đầy đủ thông tin đăng nhập", null);
 		}
@@ -146,6 +169,25 @@ public class AccountServiceImpl implements AccountService {
 		Optional<Account> optAcc = this.findByUsername(model.getUsername());
 		if (optAcc.isPresent()) {
 			return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác", null);
+/* baochau
+		} else {
+			String hashedPassword = passwordUtil.hashPassword(model.getPassword());
+			Account acc = new Account(model.getUsername(), hashedPassword, model.getRole());
+			if (model.getRole() == ERole.APPLICANT) {
+				Applicant applicant = new Applicant();
+				applicant.setAccount(acc);
+				applicant.setEmail(model.getEmail());
+				acc.setApplicant(applicant);
+			} else if (model.getRole() == ERole.EMPLOYER) {
+				 Employer employer = new Employer();
+				 employer.setAccount(acc);
+				 employer.setEmail(model.getEmail());
+				 acc.setEmployer(employer);
+			}
+			accRepo.save(acc);
+			return new Response(true, "Đăng ký thành công", acc);
+		}
+*/
 		}
 
 		if (isExistByEmail(model.getEmail())) {

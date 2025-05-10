@@ -109,7 +109,7 @@ public class JobServiceImpl implements JobService{
 	public ResponseEntity<Response> findAll(Specification<Job> spec) {
 		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobRepo.findAll(spec)), HttpStatus.OK);
 	}
-	
+
 	@Override
 	public ResponseEntity<Response> findNewJobs() {
 		List<Job> newjobs = jobRepo.findAll();
