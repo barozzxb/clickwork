@@ -12,8 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.JobFilterRequest;
+import vn.clickwork.service.EmployerService;
 import vn.clickwork.service.JobService;
-import vn.clickwork.service.impl.JobSpecification;
+
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -22,19 +23,22 @@ public class JobAPI {
 	@Autowired
 	JobService jobServ;
 	
+	@Autowired
+	EmployerService empServ;
+	
 	@GetMapping
 	public ResponseEntity<?> listJobs(){
 		return jobServ.findAll();
 	}
 	
-	@GetMapping("/id={id}")
+	@GetMapping("/{id}")
 	public ResponseEntity<?> getJob(@PathVariable("id") Long id){
 		return jobServ.findById(id);
 	}
 	
 	@PostMapping("/filter")
 	public ResponseEntity<Response> filterJobs(@RequestBody JobFilterRequest request){
-		return jobServ.findAll(JobSpecification.filter(request));
+		return jobServ.filterJobs(request);
 	}
 	
 	@GetMapping("/newjobs")
@@ -42,4 +46,8 @@ public class JobAPI {
 		return jobServ.findNewJobs();
 	}
 	
+	@GetMapping("/get-employers")
+	public ResponseEntity<Response> getEmployers(){
+		return empServ.findAll();
+	}
 }
