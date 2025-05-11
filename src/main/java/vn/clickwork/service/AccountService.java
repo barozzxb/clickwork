@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 
 import vn.clickwork.entity.Account;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.request.ChangePasswordRequest;
 import vn.clickwork.model.request.LoginRequest;
 import vn.clickwork.model.request.RegisterRequest;
 
@@ -38,4 +39,6 @@ public interface AccountService {
 	Response createAdminAccount(RegisterRequest model);
 	Response getSystemEmails(String role, String search);
 	Response sendAdminEmail(String subject, String message, List<String> emails, String role);
+
+    ResponseEntity<Response> changePassword(ChangePasswordRequest request);
 }

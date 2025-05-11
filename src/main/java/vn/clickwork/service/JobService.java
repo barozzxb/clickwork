@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 
 import vn.clickwork.entity.Job;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.request.JobFilterRequest;
 
 public interface JobService {
 
@@ -24,7 +25,8 @@ public interface JobService {
 	
 	ResponseEntity<Response> updateJob(Job entity);
 	
-	ResponseEntity<Response> findAll(Specification<Job> spec);
 
 	ResponseEntity<Response> findNewJobs();
+
+	ResponseEntity<Response> filterJobs(JobFilterRequest request);
 }
