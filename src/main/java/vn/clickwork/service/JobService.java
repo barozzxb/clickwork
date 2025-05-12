@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import vn.clickwork.entity.Job;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.JobFilterRequest;
+import vn.clickwork.model.request.PageRequest;
 
 public interface JobService {
 
@@ -19,6 +20,8 @@ public interface JobService {
 	ResponseEntity<Response> findById(Long id);
 
 	ResponseEntity<Response> findAll();
+
+	ResponseEntity<Response> findAllPaged(PageRequest pageRequest);
 
 	ResponseEntity<Response> save(Job entity);
 

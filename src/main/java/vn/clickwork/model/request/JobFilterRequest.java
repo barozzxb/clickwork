@@ -1,22 +1,22 @@
 package vn.clickwork.model.request;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class JobFilterRequest {
     private String name;
-    private Date dateFrom;
-    private Date dateTo;
-    private Integer salaryMin;
-    private Integer salaryMax;
+    private LocalDate dateFrom;
+    private LocalDate dateTo;
+    private Double salaryMin;
+    private Double salaryMax;
+    private List<String> tags;
     private Long employerId;
     private String jobType;
-    private String field;
+    // Thêm trường isActive để kiểm soát việc hiển thị công việc active/inactive
     private Boolean isActive;
 }

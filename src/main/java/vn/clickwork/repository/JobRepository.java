@@ -11,7 +11,10 @@ import vn.clickwork.entity.Job;
 import vn.clickwork.entity.SaveJob;
 
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import vn.clickwork.enumeration.EJobType;
 import vn.clickwork.model.dto.JobFieldCountDTO;
 
 @Repository
@@ -33,23 +36,35 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 	@Query("SELECT j.jobtype AS type, COUNT(j) AS count FROM Job j GROUP BY j.jobtype")
 	List<Object[]> countJobsByType();
 
-	@Query("SELECT j FROM Job j WHERE j.employer.email = :email")
+	@Query("SELECT j FROM Job j JOIN FETCH j.employer e LEFT JOIN FETCH e.addresses WHERE e.email = :email")
 	List<Job> findByEmployerEmail(@Param("email") String email);
 
-	// Add query methods for filtering
-	@Query("SELECT j FROM Job j WHERE " +
+	@Query("SELECT j FROM Job j JOIN FETCH j.employer e LEFT JOIN FETCH e.addresses WHERE " +
 			"(:name IS NULL OR LOWER(j.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
 			"(:jobType IS NULL OR j.jobtype = :jobType) AND " +
-			"(:field IS NULL OR j.field = :field) AND " +
-			"(:minSalary IS NULL OR CAST(SUBSTRING(j.salary, 1, LOCATE('-', j.salary) - 1) AS int) >= :minSalary) AND " +
-			"(:maxSalary IS NULL OR CAST(SUBSTRING(j.salary, LOCATE('-', j.salary) + 1) AS int) <= :maxSalary) AND " +
+			"(:employerId IS NULL OR e.id = :employerId) AND " +
+			"(:dateFrom IS NULL OR j.createdat >= :dateFrom) AND " +
+			"(:dateTo IS NULL OR j.createdat <= :dateTo) AND " +
+			"(:salaryMin IS NULL OR CAST(SUBSTRING(j.salary, 1, LOCATE('-', j.salary) - 1) AS double) >= :salaryMin) AND " +
+			"(:salaryMax IS NULL OR CAST(SUBSTRING(j.salary, LOCATE('-', j.salary) + 1) AS double) <= :salaryMax) AND " +
 			"(:isActive IS NULL OR j.isActive = :isActive)")
 	List<Job> filterJobs(
 			@Param("name") String name,
-			@Param("jobType") String jobType,
-			@Param("field") String field,
-			@Param("minSalary") Integer minSalary,
-			@Param("maxSalary") Integer maxSalary,
+			@Param("jobType") EJobType jobType,
+			@Param("employerId") Long employerId,
+			@Param("dateFrom") java.time.LocalDate dateFrom,
+			@Param("dateTo") java.time.LocalDate dateTo,
+			@Param("salaryMin") Double salaryMin,
+			@Param("salaryMax") Double salaryMax,
 			@Param("isActive") Boolean isActive
 	);
+
+	@Query("SELECT DISTINCT j FROM Job j JOIN FETCH j.employer e LEFT JOIN FETCH e.addresses JOIN j.tags t WHERE t IN :tags")
+	List<Job> findByTagsIn(@Param("tags") List<String> tags);
+
+	@Query("SELECT j FROM Job j JOIN FETCH j.employer e LEFT JOIN FETCH e.addresses")
+	List<Job> findAllWithEmployerAndAddresses();
+
+	@Query("SELECT j FROM Job j JOIN FETCH j.employer e LEFT JOIN FETCH e.addresses")
+	Page<Job> findAllWithEmployerAndAddresses(Pageable pageable);
 }
