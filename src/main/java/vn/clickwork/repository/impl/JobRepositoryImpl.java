@@ -18,6 +18,11 @@ public class JobRepositoryImpl implements JobRepositoryCustom {
     private EntityManager em;
 
     @Override
+    public List<Job> findJobsWithFilter(JobFilterRequest request) {
+        return List.of();
+    }
+
+    @Override
     public List<Job> filterJobs(JobFilterRequest filter) {
         StringBuilder jpql = new StringBuilder("SELECT j FROM Job j WHERE 1=1 ");
         Map<String, Object> params = new HashMap<>();
