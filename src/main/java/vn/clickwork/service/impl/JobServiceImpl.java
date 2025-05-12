@@ -22,6 +22,9 @@ public class JobServiceImpl implements JobService{
 
 	@Autowired
 	JobRepository jobRepo;
+	
+	@Autowired
+	JobRepositoryCustom jobRepoCustom;
 
 	@Autowired
 	JobRepositoryCustom jobRepoCustom;

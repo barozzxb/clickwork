@@ -12,15 +12,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.web.cors.CorsConfigurationSource;
 import vn.clickwork.filter.JwtFilter;
 import vn.clickwork.service.impl.CustomAccountDetailsService;
 import vn.clickwork.util.JwtUtils;
-
-import java.util.Arrays;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -28,10 +25,13 @@ public class SecurityConfig {
 
 	private final CustomAccountDetailsService accDetailServ;
 	private final JwtUtils jwtUtils;
+	private final CorsConfigurationSource corsConfigurationSource;
 
-	public SecurityConfig(CustomAccountDetailsService accDetailServ, JwtUtils jwtUtils) {
+	public SecurityConfig(CustomAccountDetailsService accDetailServ, JwtUtils jwtUtils,
+			CorsConfigurationSource corsConfigurationSource) {
 		this.accDetailServ = accDetailServ;
 		this.jwtUtils = jwtUtils;
+		this.corsConfigurationSource = corsConfigurationSource;
 	}
 
 	@Bean
@@ -58,33 +58,25 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public CorsConfigurationSource customCorsConfigurationSource() {
-		CorsConfiguration config = new CorsConfiguration();
-		config.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		config.setAllowedHeaders(Arrays.asList("*"));
-		config.setAllowCredentials(true);
-
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/api/**", config);
-		return source;
-	}
-
-	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http
-				.csrf(csrf -> csrf.disable())
-				.cors(cors -> cors.configurationSource(customCorsConfigurationSource())) // ✅ Gọi bean đúng tên
+		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**").permitAll()
+				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll() 
 						.requestMatchers("/api/jobs/**").permitAll()
-						.requestMatchers("/uploads/**").permitAll()
-						.anyRequest().authenticated()
-				)
+						.requestMatchers("/uploads/**").permitAll() 
+						.requestMatchers("/api/support/**").permitAll() 
+						.requestMatchers("/api/saved-jobs/**").permitAll() 
+						.requestMatchers("/api/applications/**").permitAll() 
+						.requestMatchers("/api/applicant/**").hasRole("APPLICANT")
+						.requestMatchers("/api/employer/**").hasRole("EMPLOYER")
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						.requestMatchers(HttpMethod.DELETE, "/api/applicant/manage-cvs/delete/**").authenticated()
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						.requestMatchers("/api/support/**").hasRole("ADMIN")
+						.anyRequest().authenticated())
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
-
 		return http.build();
 	}
 }

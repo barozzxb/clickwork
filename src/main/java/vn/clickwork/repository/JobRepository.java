@@ -35,5 +35,4 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
 	@Query("SELECT j FROM Job j WHERE j.employer.email = :email")
 	List<Job> findByEmployerEmail(@Param("email") String email);
-
 }
