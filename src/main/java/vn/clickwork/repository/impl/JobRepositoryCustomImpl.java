@@ -3,6 +3,7 @@ package vn.clickwork.repository.impl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import vn.clickwork.entity.Job;
 import vn.clickwork.model.request.JobFilterRequest;
@@ -11,6 +12,7 @@ import vn.clickwork.repository.JobRepositoryCustom;
 import java.util.List;
 
 @Repository
+@Primary
 public class JobRepositoryCustomImpl implements JobRepositoryCustom {
 
     @PersistenceContext

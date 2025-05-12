@@ -1,6 +1,5 @@
 package vn.clickwork.service;
 
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 
 import vn.clickwork.entity.Job;
@@ -25,7 +24,6 @@ public interface JobService {
 
 	ResponseEntity<Response> updateJob(Job entity);
 
-
 	ResponseEntity<Response> findNewJobs();
 
 	ResponseEntity<Response> filterJobs(JobFilterRequest request);
@@ -33,5 +31,4 @@ public interface JobService {
 	ResponseEntity<Response> findByEmployerEmail(String email);
 
 	ResponseEntity<Response> toggleJobStatus(Long id);
-
 }

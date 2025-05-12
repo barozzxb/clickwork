@@ -35,4 +35,21 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
 	@Query("SELECT j FROM Job j WHERE j.employer.email = :email")
 	List<Job> findByEmployerEmail(@Param("email") String email);
+
+	// Add query methods for filtering
+	@Query("SELECT j FROM Job j WHERE " +
+			"(:name IS NULL OR LOWER(j.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+			"(:jobType IS NULL OR j.jobtype = :jobType) AND " +
+			"(:field IS NULL OR j.field = :field) AND " +
+			"(:minSalary IS NULL OR CAST(SUBSTRING(j.salary, 1, LOCATE('-', j.salary) - 1) AS int) >= :minSalary) AND " +
+			"(:maxSalary IS NULL OR CAST(SUBSTRING(j.salary, LOCATE('-', j.salary) + 1) AS int) <= :maxSalary) AND " +
+			"(:isActive IS NULL OR j.isActive = :isActive)")
+	List<Job> filterJobs(
+			@Param("name") String name,
+			@Param("jobType") String jobType,
+			@Param("field") String field,
+			@Param("minSalary") Integer minSalary,
+			@Param("maxSalary") Integer maxSalary,
+			@Param("isActive") Boolean isActive
+	);
 }

@@ -61,7 +61,8 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll() 
+				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/").permitAll()
 						.requestMatchers("/api/jobs/**").permitAll()
 						.requestMatchers("/uploads/**").permitAll() 
 						.requestMatchers("/api/support/**").permitAll() 
@@ -69,6 +70,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/applications/**").permitAll() 
 						.requestMatchers("/api/applicant/**").hasRole("APPLICANT")
 						.requestMatchers("/api/employer/**").hasRole("EMPLOYER")
+						.requestMatchers("/employer/**").hasRole("EMPLOYER")
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						.requestMatchers(HttpMethod.DELETE, "/api/applicant/manage-cvs/delete/**").authenticated()
