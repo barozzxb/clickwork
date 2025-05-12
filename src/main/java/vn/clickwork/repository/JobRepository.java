@@ -1,23 +1,23 @@
 package vn.clickwork.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-<<<<<<< Updated upstream
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-=======
 import org.springframework.data.repository.query.Param;
->>>>>>> Stashed changes
 import org.springframework.stereotype.Repository;
 
 import vn.clickwork.entity.Job;
+import vn.clickwork.entity.SaveJob;
+
+import org.springframework.data.jpa.repository.Query;
+
+import vn.clickwork.model.dto.JobFieldCountDTO;
 
 @Repository
-public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
+public interface JobRepository extends JpaRepository<Job, Long> {
 
 	List<Job> findByTags(String tags);
-<<<<<<< Updated upstream
-=======
 
 	List<Job> findBySave(SaveJob save);
 
@@ -36,5 +36,4 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
 	@Query("SELECT j FROM Job j WHERE j.employer.email = :email")
 	List<Job> findByEmployerEmail(@Param("email") String email);
 	
->>>>>>> Stashed changes
 }

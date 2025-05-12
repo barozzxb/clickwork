@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 
 import vn.clickwork.entity.Job;
 import vn.clickwork.model.Response;
-import vn.clickwork.service.impl.JobSpecification;
+import vn.clickwork.model.request.JobFilterRequest;
 
 public interface JobService {
 
@@ -20,22 +20,18 @@ public interface JobService {
 	ResponseEntity<Response> findById(Long id);
 
 	ResponseEntity<Response> findAll();
-	
-	ResponseEntity<Response> findAll(Specification<Job> spec);
 
 	ResponseEntity<Response> save(Job entity);
-	
+
 	ResponseEntity<Response> updateJob(Job entity);
+
 
 	ResponseEntity<Response> findNewJobs();
 
-<<<<<<< Updated upstream
-=======
 	ResponseEntity<Response> filterJobs(JobFilterRequest request);
 
 	ResponseEntity<Response> findByEmployerEmail(String email);
 
 	ResponseEntity<Response> toggleJobStatus(Long id);
 
->>>>>>> Stashed changes
 }

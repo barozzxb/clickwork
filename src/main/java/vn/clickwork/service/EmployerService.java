@@ -11,10 +11,11 @@ public interface EmployerService {
 
 	ResponseEntity<Response> update(EmployerDetailRequest employer);
 
-	ResponseEntity<Response> updateAvatar(String username, MultipartFile file);
+    Employer findByUsername(String username);
+
+    ResponseEntity<Response> updateAvatar(String username, MultipartFile file);
 
 	ResponseEntity<Response> findAll();
 
 	ResponseEntity<Response> save(Employer entity);
-
 }
