@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
@@ -51,13 +50,8 @@ public class Job implements Serializable{
 
 	@Column(name="benefit", columnDefinition="nvarchar(5000)")
 	private String benefit;
-<<<<<<< Updated upstream
-	
-	@Column(name="filed", columnDefinition="nvarchar(255)")
-=======
 
 	@Column(name="field", columnDefinition="nvarchar(255)")
->>>>>>> Stashed changes
 	private String field;
 
 	@Column(name="quantity", columnDefinition="int")
