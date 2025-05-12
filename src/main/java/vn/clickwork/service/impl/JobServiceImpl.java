@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -14,17 +13,13 @@ import vn.clickwork.model.Response;
 import vn.clickwork.model.dto.JobDTO;
 import vn.clickwork.model.request.JobFilterRequest;
 import vn.clickwork.repository.JobRepository;
-import vn.clickwork.repository.JobRepositoryCustom;
 import vn.clickwork.service.JobService;
 
 @Service
-public class JobServiceImpl implements JobService{
-	
+public class JobServiceImpl implements JobService {
+
 	@Autowired
 	JobRepository jobRepo;
-	
-	@Autowired
-	JobRepositoryCustom jobRepoCustom;
 
 	@Override
 	public ResponseEntity<Response> save(Job entity) {
@@ -39,7 +34,7 @@ public class JobServiceImpl implements JobService{
 	@Override
 	public ResponseEntity<Response> findAll() {
 		List<Job> jobs = jobRepo.findAll();
-		if (jobRepo.findAll().isEmpty()) {
+		if (jobs.isEmpty()) {
 			return new ResponseEntity<Response>(new Response(true, "Danh sách công việc trống", null), HttpStatus.OK);
 		}
 		List<JobDTO> jobDTOs = jobs.stream().map(this::mapToDTO).toList();
@@ -84,36 +79,35 @@ public class JobServiceImpl implements JobService{
 
 	@Override
 	public ResponseEntity<Response> updateJob(Job jobDetails) {
-	    Optional<Job> optionalJob = jobRepo.findById(jobDetails.getId());
+		Optional<Job> optionalJob = jobRepo.findById(jobDetails.getId());
 
-	    if (!optionalJob.isPresent()) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-	            .body(new Response(false, "Không tìm thấy công việc để cập nhật", null));
-	    }
+		if (!optionalJob.isPresent()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(new Response(false, "Không tìm thấy công việc để cập nhật", null));
+		}
 
-	    Job existingJob = optionalJob.get();
-	    
-	    existingJob.setName(jobDetails.getName());
-	    existingJob.setJobtype(jobDetails.getJobtype());
-	    existingJob.setSalary(jobDetails.getSalary());
-	    existingJob.setTags(jobDetails.getTags());
-	    existingJob.setDescription(jobDetails.getDescription());
-	    existingJob.setRequiredskill(jobDetails.getRequiredskill());
-	    existingJob.setActive(jobDetails.isActive());
-	    existingJob.setBenefit(jobDetails.getBenefit());
-	    existingJob.setField(jobDetails.getField());
-	    existingJob.setQuantity(jobDetails.getQuantity());
+		Job existingJob = optionalJob.get();
 
-	    try {
-	        Job updatedJob = jobRepo.save(existingJob);
-	        return ResponseEntity.ok(new Response(true, "Cập nhật công việc thành công", updatedJob));
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	            .body(new Response(false, "Cập nhật công việc thất bại", null));
-	    }
+		existingJob.setName(jobDetails.getName());
+		existingJob.setJobtype(jobDetails.getJobtype());
+		existingJob.setSalary(jobDetails.getSalary());
+		existingJob.setTags(jobDetails.getTags());
+		existingJob.setDescription(jobDetails.getDescription());
+		existingJob.setRequiredskill(jobDetails.getRequiredskill());
+		existingJob.setActive(jobDetails.isActive());
+		existingJob.setBenefit(jobDetails.getBenefit());
+		existingJob.setField(jobDetails.getField());
+		existingJob.setQuantity(jobDetails.getQuantity());
+
+		try {
+			Job updatedJob = jobRepo.save(existingJob);
+			return ResponseEntity.ok(new Response(true, "Cập nhật công việc thành công", updatedJob));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new Response(false, "Cập nhật công việc thất bại", null));
+		}
 	}
-
 
 	@Override
 	public ResponseEntity<Response> findNewJobs() {
@@ -127,18 +121,71 @@ public class JobServiceImpl implements JobService{
 		}
 		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
 	}
-	
+
 	@Override
 	public ResponseEntity<Response> filterJobs(JobFilterRequest request) {
-		
-		List<Job> jobs = jobRepoCustom.filterJobs(request);
-		if (jobs.isEmpty()) {
-			return new ResponseEntity<Response>(new Response(true, "Không tìm thấy công việc phù hợp", null), HttpStatus.OK);
+		// Implement filtering logic in service layer
+		try {
+			List<Job> jobs = jobRepo.filterJobs(
+					request.getName(),
+					request.getJobType(),
+					request.getField(),
+					request.getSalaryMin(),
+					request.getSalaryMax(),
+					request.getIsActive()
+			);
+
+			if (jobs.isEmpty()) {
+				return new ResponseEntity<Response>(
+						new Response(true, "Không tìm thấy công việc phù hợp", null),
+						HttpStatus.OK
+				);
+			}
+
+			List<JobDTO> jobDTOs = jobs.stream().map(this::mapToDTO).toList();
+			return new ResponseEntity<Response>(
+					new Response(true, "Lấy dữ liệu thành công", jobDTOs),
+					HttpStatus.OK
+			);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<Response>(
+					new Response(false, "Lỗi khi lọc công việc: " + e.getMessage(), null),
+					HttpStatus.INTERNAL_SERVER_ERROR
+			);
 		}
-		List<JobDTO> jobDTOs = jobs.stream().map(this::mapToDTO).toList();
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
 	}
-	
+
+	@Override
+	public ResponseEntity<Response> findByEmployerEmail(String email) {
+		List<Job> jobs = jobRepo.findByEmployerEmail(email);
+		if (jobs.isEmpty()) {
+			return ResponseEntity.ok(new Response(true, "Không có công việc nào", List.of()));
+		}
+		List<JobDTO> dtos = jobs.stream().map(this::mapToDTO).toList();
+		return ResponseEntity.ok(new Response(true, "Lấy danh sách công việc thành công", dtos));
+	}
+
+	@Override
+	public ResponseEntity<Response> toggleJobStatus(Long id) {
+		Optional<Job> optional = jobRepo.findById(id);
+		if (optional.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(new Response(false, "Không tìm thấy công việc", null));
+		}
+
+		Job job = optional.get();
+		job.setActive(!job.isActive());
+
+		try {
+			jobRepo.save(job);
+			return ResponseEntity.ok(new Response(true, "Cập nhật trạng thái thành công", job.isActive()));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new Response(false, "Thất bại khi cập nhật trạng thái", null));
+		}
+	}
+
 	private JobDTO mapToDTO(Job job) {
 		JobDTO dto = new JobDTO();
 		dto.setId(job.getId());
@@ -157,4 +204,3 @@ public class JobServiceImpl implements JobService{
 		return dto;
 	}
 }
-
