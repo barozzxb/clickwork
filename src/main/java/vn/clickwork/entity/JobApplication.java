@@ -18,32 +18,28 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.clickwork.enumeration.EApplyStatus;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-
 @Entity
-@Table(name="JobApplication")
-public class JobApplication implements Serializable{
+@Table(name = "application")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class JobApplication {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	private static final long serialVersionUID = 1L;
+    @ManyToOne
+    @JoinColumn(name = "applicant_id")
+    private Applicant applicant;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	
-	@Column(name="time", columnDefinition="timestamp")
-	private Timestamp time;
-	
-	@Enumerated(EnumType.STRING)
-	@Column(name="status", columnDefinition="nvarchar(255)")
-	private EApplyStatus status;
-	
-	@ManyToOne
-	@JoinColumn(name="applicant_id", referencedColumnName = "username")
-	private Applicant applicant;
-	
-	@ManyToOne
-	@JoinColumn(name="job_id", referencedColumnName = "id")
-	private Job job;
+    @ManyToOne
+    @JoinColumn(name = "job_id")
+    private Job job;
+
+    @Column(name = "applied_at")
+    private Timestamp appliedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private EApplyStatus status = EApplyStatus.PENDING; // Mặc định
 }
