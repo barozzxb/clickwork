@@ -10,9 +10,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import vn.clickwork.model.Response;
 import vn.clickwork.model.dto.AdminProfileDTO;
+import vn.clickwork.model.dto.NotificationDTO;
 import vn.clickwork.model.request.AddressRequest;
 import vn.clickwork.model.request.PasswordChangeRequest;
 import vn.clickwork.service.AdminProfileService;
+import vn.clickwork.service.NotificationService;
 
 import java.util.List;
 
@@ -23,6 +25,9 @@ public class AdminProfileAPI {
 
     @Autowired
     private AdminProfileService adminProfileService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<Response> getAdminProfile() {
@@ -119,6 +124,60 @@ public class AdminProfileAPI {
             return ResponseEntity.ok(new Response(true, "Address deleted successfully", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new Response(false, "Failed to delete address: " + e.getMessage(), null));
+        }
+    }
+
+    // Notification endpoints
+
+    @GetMapping("/notifications")
+    public ResponseEntity<Response> getNotifications() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
+            List<NotificationDTO> notifications = notificationService.getAdminNotifications(username);
+            return ResponseEntity.ok(new Response(true, "Notifications retrieved successfully", notifications));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new Response(false, "Failed to retrieve notifications: " + e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/notifications/unread-count")
+    public ResponseEntity<Response> getUnreadNotificationCount() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
+            long count = notificationService.getUnreadNotificationCount(username);
+            return ResponseEntity.ok(new Response(true, "Unread notification count retrieved successfully", count));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new Response(false, "Failed to retrieve unread notification count: " + e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/notifications/{notificationId}/mark-read")
+    public ResponseEntity<Response> markNotificationAsRead(@PathVariable Long notificationId) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
+            notificationService.markNotificationAsRead(username, notificationId);
+            return ResponseEntity.ok(new Response(true, "Notification marked as read successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new Response(false, "Failed to mark notification as read: " + e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/notifications/mark-all-read")
+    public ResponseEntity<Response> markAllNotificationsAsRead() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
+            notificationService.markAllNotificationsAsRead(username);
+            return ResponseEntity.ok(new Response(true, "All notifications marked as read successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new Response(false, "Failed to mark all notifications as read: " + e.getMessage(), null));
         }
     }
 }
