@@ -177,6 +177,13 @@ public class AccountServiceImpl implements AccountService {
 			String fileUrl = "/uploads/avatar/user_default.png";
 			employer.setAvatar(fileUrl);
 			acc.setEmployer(employer);
+		} else if (model.getRole() == ERole.ADMIN) {
+			Admin admin = new Admin();
+			admin.setAccount(acc);
+			admin.setEmail(model.getEmail());
+			String fileUrl = "/uploads/avatar/user_default.png";
+			admin.setAvatar(fileUrl);
+			acc.setAdmin(admin);
 		}
 		accRepo.save(acc);
 		return new Response(true, "Đăng ký thành công", acc);
