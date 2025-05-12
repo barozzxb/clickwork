@@ -119,7 +119,68 @@ public class JobServiceImpl implements JobService{
 		if (newjobs.size() > 3) {
 			newjobs = newjobs.subList(0, 3);
 		}
+<<<<<<< Updated upstream
 		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", newjobs), HttpStatus.OK);
+=======
+		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
+	}
+	
+	@Override
+	public ResponseEntity<Response> filterJobs(JobFilterRequest request) {
+		
+		List<Job> jobs = jobRepoCustom.filterJobs(request);
+		if (jobs.isEmpty()) {
+			return new ResponseEntity<Response>(new Response(true, "Không tìm thấy công việc phù hợp", null), HttpStatus.OK);
+		}
+		List<JobDTO> jobDTOs = jobs.stream().map(this::mapToDTO).toList();
+		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
+	}
+
+	@Override
+	public ResponseEntity<Response> findByEmployerEmail(String email) {
+		List<Job> jobs = jobRepo.findByEmployerEmail(email);
+		if (jobs.isEmpty()) {
+			return ResponseEntity.ok(new Response(true, "Không có công việc nào", List.of()));
+		}
+		List<JobDTO> dtos = jobs.stream().map(this::mapToDTO).toList();
+		return ResponseEntity.ok(new Response(true, "Lấy danh sách công vệc thành công", dtos));
+	}
+
+	@Override
+	public ResponseEntity<Response> toggleJobStatus(Long id) {
+		Optional<Job> optional = jobRepo.findById(id);
+		if (optional.isEmpty()){
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new Response(false, "Không tìm thấy công việc", null));
+		}
+
+		Job job = optional.get();
+		job.setActive(!job.isActive());
+
+		try {
+			jobRepo.save(job);
+			return ResponseEntity.ok(new Response(true, "Cập nhật trạng thái thành công", job.isActive()));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Response(false, "Thất bại khi cập nhật trạng thái", null));
+		}
+	}
+
+	private JobDTO mapToDTO(Job job) {
+		JobDTO dto = new JobDTO();
+		dto.setId(job.getId());
+		dto.setName(job.getName());
+		dto.setJobtype(job.getJobtype().getValue());
+		dto.setCreatedat(job.getCreatedat());
+		dto.setSalary(job.getSalary());
+		dto.setTags(job.getTags());
+		dto.setDescription(job.getDescription());
+		dto.setRequiredskill(job.getRequiredskill());
+		dto.setBenefit(job.getBenefit());
+		dto.setField(job.getField());
+		dto.setQuantity(job.getQuantity());
+		dto.setActive(job.isActive());
+		dto.setEmployer(job.getEmployer());
+		return dto;
+>>>>>>> Stashed changes
 	}
 }
 

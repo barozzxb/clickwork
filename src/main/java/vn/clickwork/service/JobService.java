@@ -29,4 +29,13 @@ public interface JobService {
 
 	ResponseEntity<Response> findNewJobs();
 
+<<<<<<< Updated upstream
+=======
+	ResponseEntity<Response> filterJobs(JobFilterRequest request);
+
+	ResponseEntity<Response> findByEmployerEmail(String email);
+
+	ResponseEntity<Response> toggleJobStatus(Long id);
+
+>>>>>>> Stashed changes
 }
