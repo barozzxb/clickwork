@@ -38,6 +38,9 @@ public class Job implements Serializable{
 
 	@Column(name="salary", columnDefinition="nvarchar(255)")
 	private String salary;
+	
+	@Column(name="address", columnDefinition="nvarchar(255)")
+	private String address;
 
 	@ElementCollection
 	private List<String> tags;
