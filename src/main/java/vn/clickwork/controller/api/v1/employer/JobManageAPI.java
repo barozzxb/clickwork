@@ -15,20 +15,20 @@ import java.util.Optional;
 @RequestMapping("/employer/job")
 public class JobManageAPI {
 
-	@Autowired
-	JobService jobServ;
-	
-	@GetMapping
-	public ResponseEntity<Response> getAllJobs(){
-		return jobServ.findAll();
-	}
+    @Autowired
+    JobService jobServ;
+
+    @GetMapping
+    public ResponseEntity<Response> getAllJobs(){
+        return jobServ.findAll();
+    }
 
     @GetMapping("/by-employer")
     public ResponseEntity<Response> getJobsByEmail(@RequestParam String email){
         return jobServ.findByEmployerEmail(email);
     }
 
-	@PostMapping("/add")
+    @PostMapping("/add")
     public ResponseEntity<Response> createJob(@RequestBody String email, @RequestBody Job job) {
         job.setEmployer(null);
         return jobServ.save(job);
