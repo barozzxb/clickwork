@@ -6,11 +6,10 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.clickwork.entity.Employer;
 
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class JobDTO {
 	private Long id;
 	private String name;
@@ -24,5 +23,5 @@ public class JobDTO {
 	private String field;
 	private int quantity;
 	private boolean isActive;
-	private Employer employer;
+	private EmployerDTO employer;
 }
