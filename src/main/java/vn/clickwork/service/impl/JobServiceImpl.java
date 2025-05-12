@@ -11,14 +11,20 @@ import org.springframework.stereotype.Service;
 
 import vn.clickwork.entity.Job;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.JobDTO;
+import vn.clickwork.model.request.JobFilterRequest;
 import vn.clickwork.repository.JobRepository;
+import vn.clickwork.repository.JobRepositoryCustom;
 import vn.clickwork.service.JobService;
 
 @Service
 public class JobServiceImpl implements JobService{
-	
+
 	@Autowired
 	JobRepository jobRepo;
+
+	@Autowired
+	JobRepositoryCustom jobRepoCustom;
 
 	@Override
 	public ResponseEntity<Response> save(Job entity) {
@@ -36,14 +42,16 @@ public class JobServiceImpl implements JobService{
 		if (jobRepo.findAll().isEmpty()) {
 			return new ResponseEntity<Response>(new Response(true, "Danh sách công việc trống", null), HttpStatus.OK);
 		}
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobs), HttpStatus.OK);
+		List<JobDTO> jobDTOs = jobs.stream().map(this::mapToDTO).toList();
+		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
 	}
 
 	@Override
 	public ResponseEntity<Response> findById(Long id) {
 		Optional<Job> optJob = jobRepo.findById(id);
 		if (optJob.isPresent()) {
-			return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", optJob.get()), HttpStatus.OK);
+			JobDTO jobDTO = mapToDTO(optJob.get());
+			return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTO), HttpStatus.OK);
 		} else {
 			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy công việc", null), HttpStatus.NOT_FOUND);
 		}
@@ -70,7 +78,8 @@ public class JobServiceImpl implements JobService{
 		if (jobs.isEmpty()) {
 			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy công việc với tag này", null), HttpStatus.NOT_FOUND);
 		}
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobs), HttpStatus.OK);
+		List<JobDTO> jobDTOs = jobs.stream().map(this::mapToDTO).toList();
+		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
 	}
 
 	@Override
@@ -83,7 +92,7 @@ public class JobServiceImpl implements JobService{
 	    }
 
 	    Job existingJob = optionalJob.get();
-	    
+
 	    existingJob.setName(jobDetails.getName());
 	    existingJob.setJobtype(jobDetails.getJobtype());
 	    existingJob.setSalary(jobDetails.getSalary());
@@ -105,29 +114,23 @@ public class JobServiceImpl implements JobService{
 	    }
 	}
 
-	@Override
-	public ResponseEntity<Response> findAll(Specification<Job> spec) {
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobRepo.findAll(spec)), HttpStatus.OK);
-	}
-	
+
 	@Override
 	public ResponseEntity<Response> findNewJobs() {
 		List<Job> newjobs = jobRepo.findAll();
 		if (newjobs.isEmpty()) {
 			return new ResponseEntity<Response>(new Response(true, "Danh sách công việc trống", null), HttpStatus.OK);
 		}
-		if (newjobs.size() > 3) {
-			newjobs = newjobs.subList(0, 3);
+		List<JobDTO> jobDTOs = newjobs.stream().map(this::mapToDTO).toList();
+		if (jobDTOs.size() > 3) {
+			jobDTOs = jobDTOs.subList(0, 3);
 		}
-<<<<<<< Updated upstream
-		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", newjobs), HttpStatus.OK);
-=======
 		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
 	}
-	
+
 	@Override
 	public ResponseEntity<Response> filterJobs(JobFilterRequest request) {
-		
+
 		List<Job> jobs = jobRepoCustom.filterJobs(request);
 		if (jobs.isEmpty()) {
 			return new ResponseEntity<Response>(new Response(true, "Không tìm thấy công việc phù hợp", null), HttpStatus.OK);
@@ -180,7 +183,6 @@ public class JobServiceImpl implements JobService{
 		dto.setActive(job.isActive());
 		dto.setEmployer(job.getEmployer());
 		return dto;
->>>>>>> Stashed changes
 	}
 }
 
