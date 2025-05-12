@@ -1,9 +1,11 @@
 package vn.clickwork.service.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,12 +21,15 @@ import vn.clickwork.dto.SupportRequestDTO;
 import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Admin;
 import vn.clickwork.entity.Applicant;
+import vn.clickwork.entity.CV;
 import vn.clickwork.entity.Employer;
 import vn.clickwork.entity.Support;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.ApplicantDetailRequest;
+import vn.clickwork.model.request.ChangePasswordRequest;
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.ApplicantRepository;
+import vn.clickwork.repository.CVRepository;
 import vn.clickwork.repository.SupportRepository;
 import vn.clickwork.service.AdminService;
 import vn.clickwork.service.ApplicantService;
@@ -50,6 +55,9 @@ public class ApplicantServiceImpl implements ApplicantService {
     @Autowired
     private SupportRepository supportRepository;
 
+    @Autowired
+    private CVRepository cvRepository;
+    
     @Override
     public ResponseEntity<Response> save(Applicant entity) {
         try {
@@ -202,4 +210,7 @@ public class ApplicantServiceImpl implements ApplicantService {
         return ResponseEntity.status(HttpStatus.CREATED)
                              .body(new Response(true, "Yêu cầu hỗ trợ đã được tạo thành công", support));
     }
+
+	
+
 }
