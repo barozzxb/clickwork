@@ -128,15 +128,30 @@ public class AccountServiceImpl implements AccountService {
 		if (optAcc.isPresent()) {
 			Account acc = optAcc.get();
 
-			if (acc.getStatus() == EAccountStatus.SUSPENDED) {
-				String suspendedUntilMessage = "";
-				if (acc.getSuspendedUntil() != null) {
-					suspendedUntilMessage = " đến " + acc.getSuspendedUntil().toString();
-				}
-				return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, null);
-			}
+			
+			
 
 			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword())) {
+				
+				if (acc.getStatus() == EAccountStatus.INACTIVE) {
+					
+					HashMap<String, Object> data = new HashMap<>();
+					data.put("accStatus", acc.getStatus());
+					
+					return new Response(false, "Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để kích hoạt tài khoản",
+							data);
+				}
+				
+				if (acc.getStatus() == EAccountStatus.SUSPENDED) {
+					String suspendedUntilMessage = "";
+					HashMap<String, Object> data = new HashMap<>();
+					if (acc.getSuspendedUntil() != null) {
+						suspendedUntilMessage = " đến " + acc.getSuspendedUntil().toString();
+						data.put("accStatus", acc.getStatus());
+					}
+					return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, data);
+				}
+				
 				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
 				Map<String, Object> data = new HashMap<>();
 				data.put("token", token);
@@ -1139,6 +1154,7 @@ public class AccountServiceImpl implements AccountService {
 			logger.info("Đã gửi thông báo về báo cáo vi phạm đến {} admin", admins.size());
 		} catch (Exception e) {
 			logger.error("Lỗi khi gửi thông báo đến admin: {}", e.getMessage(), e);
+
 		}
 	}
 }

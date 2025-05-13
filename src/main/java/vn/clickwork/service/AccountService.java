@@ -65,4 +65,5 @@ public interface AccountService {
 	ResponseEntity<Response> changePassword(ChangePasswordRequest request);
 
 	Response createReport(ReportRequestDTO dto, String senderUsername);
+
 }
