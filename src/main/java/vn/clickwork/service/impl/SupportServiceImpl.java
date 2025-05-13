@@ -1,6 +1,5 @@
 package vn.clickwork.service.impl;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vn.clickwork.entity.Support;
@@ -41,50 +40,117 @@ import vn.clickwork.model.dto.SupportResponseDTO;
 import vn.clickwork.model.request.SupportResponseRequest;
 import vn.clickwork.repository.NotificationRepository;
 import vn.clickwork.repository.AdminRepository;
-
+import vn.clickwork.entity.Account;
+import vn.clickwork.enumeration.ERole;
+import vn.clickwork.repository.AccountRepository;
 
 @Service
 public class SupportServiceImpl implements SupportService {
 
+    // private final SupportRepository supportRepository;
+    // private final ApplicantRepository applicantRepository;
+    // private final EmployerRepository employerRepository;
 
-//    private final SupportRepository supportRepository;
-//    private final ApplicantRepository applicantRepository;
-//    private final EmployerRepository employerRepository;
-
-//    @Autowired
-//    public SupportServiceImpl(SupportRepository supportRepository,
-//                              ApplicantRepository applicantRepository,
-//                              EmployerRepository employerRepository) {
-//        this.supportRepository = supportRepository;
-//        this.applicantRepository = applicantRepository;
-//        this.employerRepository = employerRepository;
-//    }
+    // @Autowired
+    // public SupportServiceImpl(SupportRepository supportRepository,
+    // ApplicantRepository applicantRepository,
+    // EmployerRepository employerRepository) {
+    // this.supportRepository = supportRepository;
+    // this.applicantRepository = applicantRepository;
+    // this.employerRepository = employerRepository;
+    // }
 
     @Override
     public Response createSupportRequest(SupportRequestDTO dto, String actorUsername) {
-        // Tạo đối tượng yêu cầu hỗ trợ
-        Support support = new Support();
-        support.setTitle(dto.getTitle());
-        support.setContent(dto.getContent());
-        support.setSendat(Timestamp.from(Instant.now()));
-        support.setStatus(EResponseStatus.PENDING);
+        try {
+            logger.info("Creating support request from user: {}", actorUsername);
 
-        // Tìm người dùng theo username
-        Optional<Applicant> applicantOpt = Optional.ofNullable(applicantRepository.findByAccount_Username(actorUsername));
-        Optional<Employer> employerOpt = employerRepository.findByAccount_Username(actorUsername);
+            // Validate
+            if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+                return new Response(false, "Tiêu đề không được để trống", null);
+            }
+            if (dto.getContent() == null || dto.getContent().trim().isEmpty()) {
+                return new Response(false, "Nội dung không được để trống", null);
+            }
 
-        if (applicantOpt.isPresent()) {
-            support.setApplicant(applicantOpt.get());
-        } else if (employerOpt.isPresent()) {
-            support.setEmployer(employerOpt.get());
-        } else {
-            return new Response(false, "Người dùng không tồn tại!", null);
+            // Tạo yêu cầu hỗ trợ mới
+            Support support = new Support();
+            support.setTitle(dto.getTitle());
+            support.setContent(dto.getContent());
+            support.setSendat(Timestamp.from(Instant.now()));
+            support.setStatus(EResponseStatus.PENDING);
+
+            // Tìm người dùng theo username
+            Optional<Account> account = Optional.ofNullable(accRepo.findByUsername(actorUsername).orElse(null));
+            if (account.isEmpty()) {
+                return new Response(false, "Không tìm thấy thông tin người dùng", null);
+            }
+
+            Account user = account.get();
+
+            if (user.getRole() == ERole.APPLICANT) {
+                Applicant applicant = applicantRepository.findByAccount_Username(actorUsername);
+                if (applicant == null) {
+                    return new Response(false, "Không tìm thấy thông tin ứng viên", null);
+                }
+                support.setApplicant(applicant);
+            } else if (user.getRole() == ERole.EMPLOYER) {
+                Employer employer = employerRepository.findByAccount_Username(actorUsername)
+                        .orElse(null);
+                if (employer == null) {
+                    return new Response(false, "Không tìm thấy thông tin nhà tuyển dụng", null);
+                }
+                support.setEmployer(employer);
+            } else {
+                return new Response(false, "Vai trò không hợp lệ để tạo yêu cầu hỗ trợ", null);
+            }
+
+            supportRepository.save(support);
+
+            // Gửi thông báo đến tất cả admin
+            sendSupportNotificationToAdmins(support);
+
+            return new Response(true, "Yêu cầu hỗ trợ đã được gửi thành công", null);
+        } catch (Exception e) {
+            logger.error("Lỗi khi tạo yêu cầu hỗ trợ: {}", e.getMessage(), e);
+            return new Response(false, "Không thể tạo yêu cầu hỗ trợ: " + e.getMessage(), null);
         }
-
-        supportRepository.save(support);
-        return new Response(true, "Yêu cầu hỗ trợ đã được gửi thành công!", null);
     }
 
+    // Phương thức gửi thông báo đến tất cả admin
+    private void sendSupportNotificationToAdmins(Support support) {
+        try {
+            // Lấy danh sách admin
+            List<Admin> admins = adminRepository.findAll();
+            if (admins.isEmpty()) {
+                logger.warn("Không có admin nào trong hệ thống để gửi thông báo");
+                return;
+            }
+
+            // Tạo thông báo
+            Notification notification = new Notification();
+            notification.setTitle("Yêu cầu hỗ trợ mới");
+
+            String userInfo = support.getApplicant() != null
+                    ? support.getApplicant().getFullname() + " (Ứng viên)"
+                    : support.getEmployer() != null
+                            ? support.getEmployer().getFullname() + " (Nhà tuyển dụng)"
+                            : "Người dùng";
+
+            notification.setContent(String.format("Yêu cầu hỗ trợ mới (ID: %d) từ %s với tiêu đề: %s",
+                    support.getId(), userInfo, support.getTitle()));
+
+            notification.setType(ENotiType.SYSTEM);
+            notification.setSendat(new Timestamp(System.currentTimeMillis()));
+            notification.setRead(false);
+            notification.setAdmins(admins);
+
+            notificationRepository.save(notification);
+            logger.info("Đã gửi thông báo về yêu cầu hỗ trợ đến {} admin", admins.size());
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi thông báo đến admin: {}", e.getMessage(), e);
+        }
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(SupportServiceImpl.class);
 
@@ -105,6 +171,9 @@ public class SupportServiceImpl implements SupportService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private AccountRepository accRepo;
 
     private SupportResponseDTO mapToDTO(Support support) {
         SupportResponseDTO dto = new SupportResponseDTO();
@@ -129,7 +198,8 @@ public class SupportServiceImpl implements SupportService {
     }
 
     @Override
-    public Response getAllSupportRequests(int page, int size, String search, String sortBy, String sortDir, String status) {
+    public Response getAllSupportRequests(int page, int size, String search, String sortBy, String sortDir,
+            String status) {
         try {
             logger.info("Fetching support requests: page={}, size={}, search='{}', sortBy={}, sortDir={}, status='{}'",
                     page, size, search, sortBy, sortDir, status);
@@ -165,14 +235,16 @@ public class SupportServiceImpl implements SupportService {
 
                     // Tìm kiếm theo applicant email
                     try {
-                        searchPredicates.add(cb.like(cb.lower(root.join("applicant", JoinType.LEFT).get("email")), searchPattern));
+                        searchPredicates.add(
+                                cb.like(cb.lower(root.join("applicant", JoinType.LEFT).get("email")), searchPattern));
                     } catch (Exception e) {
                         logger.warn("Error joining applicant: {}", e.getMessage());
                     }
 
                     // Tìm kiếm theo employer email
                     try {
-                        searchPredicates.add(cb.like(cb.lower(root.join("employer", JoinType.LEFT).get("email")), searchPattern));
+                        searchPredicates.add(
+                                cb.like(cb.lower(root.join("employer", JoinType.LEFT).get("email")), searchPattern));
                     } catch (Exception e) {
                         logger.warn("Error joining employer: {}", e.getMessage());
                     }
@@ -270,7 +342,8 @@ public class SupportServiceImpl implements SupportService {
             Applicant applicant = applicantRepository.findById(support.getApplicant().getId()).orElse(null);
             if (applicant != null) {
                 email = applicant.getEmail();
-                usernameFromAccount = applicant.getAccount() != null ? applicant.getAccount().getUsername() : "Người dùng";
+                usernameFromAccount = applicant.getAccount() != null ? applicant.getAccount().getUsername()
+                        : "Người dùng";
             } else {
                 logger.warn("Không tìm thấy Applicant với ID: {}", support.getApplicant().getId());
             }
@@ -278,7 +351,8 @@ public class SupportServiceImpl implements SupportService {
             Employer employer = employerRepository.findById(support.getEmployer().getId()).orElse(null);
             if (employer != null) {
                 email = employer.getEmail();
-                usernameFromAccount = employer.getAccount() != null ? employer.getAccount().getUsername() : "Người dùng";
+                usernameFromAccount = employer.getAccount() != null ? employer.getAccount().getUsername()
+                        : "Người dùng";
             } else {
                 logger.warn("Không tìm thấy Employer với ID: {}", support.getEmployer().getId());
             }
@@ -295,8 +369,7 @@ public class SupportServiceImpl implements SupportService {
                             "<p><strong>%s</strong></p>" +
                             "<p>Vui lòng đăng nhập vào hệ thống để xem chi tiết.</p>" +
                             "<p>Trân trọng,<br>Đội ngũ ClickWork</p>",
-                    usernameFromAccount, id, username, request.getResponse()
-            );
+                    usernameFromAccount, id, username, request.getResponse());
             try {
                 logger.info("Gửi email đến: {} với chủ đề: Phản hồi yêu cầu hỗ trợ ID {}", email, id);
                 emailService.sendEmail(email, "Phản hồi yêu cầu hỗ trợ", emailContent);
@@ -311,7 +384,8 @@ public class SupportServiceImpl implements SupportService {
 
         Notification notification = new Notification();
         notification.setTitle("Phản hồi yêu cầu hỗ trợ");
-        notification.setContent(String.format("Yêu cầu hỗ trợ ID %d đã được phản hồi bởi %s: %s", id, username, request.getResponse()));
+        notification.setContent(
+                String.format("Yêu cầu hỗ trợ ID %d đã được phản hồi bởi %s: %s", id, username, request.getResponse()));
         notification.setType(ENotiType.RESPONSE);
         notification.setSendat(new Timestamp(System.currentTimeMillis()));
         if (support.getApplicant() != null) {

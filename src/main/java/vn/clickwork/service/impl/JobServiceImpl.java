@@ -311,6 +311,7 @@ public class JobServiceImpl implements JobService {
 		dto.setJobtype(job.getJobtype() != null ? job.getJobtype().name() : null);
 		dto.setCreatedat(job.getCreatedat());
 		dto.setSalary(job.getSalary());
+		dto.setAddress(job.getAddress());
 		dto.setTags(job.getTags());
 		dto.setDescription(job.getDescription());
 		dto.setRequiredskill(job.getRequiredskill());
@@ -333,6 +334,7 @@ public class JobServiceImpl implements JobService {
 		dto.setJobtype(job.getJobtype() != null ? job.getJobtype().name() : null);
 		dto.setCreatedat(job.getCreatedat());
 		dto.setSalary(job.getSalary());
+		dto.setAddress(job.getAddress());
 		dto.setTags(job.getTags());
 		dto.setField(job.getField());
 		dto.setActive(job.isActive());
