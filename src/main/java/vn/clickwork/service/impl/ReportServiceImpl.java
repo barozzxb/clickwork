@@ -34,15 +34,34 @@ public class ReportServiceImpl implements ReportService {
     public StatisticsDTO getAllStatistics() {
         try {
             StatisticsDTO report = new StatisticsDTO();
-            report.setJobStats(getJobStatistics());
-          //  report.setApplicationStats(getApplicationStatistics());
-            report.setUserStats(getUserStatistics());
-            report.setJobCategories(getJobCategories());
-            report.setViolationStats(getViolationStatistics());
+            
+            JobStatsDTO jobStats = getJobStatistics();
+            logger.info("Job Stats: {}", jobStats);
+            report.setJobStats(jobStats);
+            
+            ApplicationStatsDTO appStats = getApplicationStatistics();
+            logger.info("Application Stats: {}", appStats);
+            report.setApplicationStats(appStats);
+            
+            UserStatsDTO userStats = getUserStatistics();
+            logger.info("User Stats: {}", userStats);
+            report.setUserStats(userStats);
+            
+            List<Map<String, Object>> jobCats = getJobCategories();
+            logger.info("Job Categories: {}", jobCats);
+            report.setJobCategories(jobCats);
+            
+            ViolationStatsDTO violationStats = getViolationStatistics();
+            logger.info("Violation Stats: {}", violationStats);
+            report.setViolationStats(violationStats);
+
             return report;
         } catch (Exception e) {
-            logger.error("Error retrieving statistics: {}", e.getMessage());
-            return new StatisticsDTO(); // Return empty DTO on error
+            logger.error("Error retrieving statistics: {}", e.getMessage(), e);
+            StatisticsDTO emptyReport = new StatisticsDTO();
+            emptyReport.setApplicationStats(new ApplicationStatsDTO(0, Collections.emptyList(), Collections.emptyList()));
+            emptyReport.setJobStats(new JobStatsDTO(0, 0, 0, Collections.emptyList(), Collections.emptyList()));
+            return emptyReport;
         }
     }
 
@@ -83,40 +102,54 @@ public class ReportServiceImpl implements ReportService {
         }
     }
 
-//    private ApplicationStatsDTO getApplicationStatistics() {
-//        try {
-//            long totalApplications = jobApplicationRepository.count();
-//
-//            List<Map<String, Object>> applicationsByStatus = jobApplicationRepository.countApplicationsByStatus()
-//                    .stream()
-//                    .map(entry -> {
-//                        String status = entry[0] != null ? entry[0].toString() : "Unknown";
-//                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
-//                        Map<String, Object> result = new HashMap<>();
-//                        result.put("name", status);
-//                        result.put("count", count);
-//                        return result;
-//                    })
-//                    .collect(Collectors.toList());
-//
-//            List<Map<String, Object>> applicationsByMonth = jobApplicationRepository.countApplicationsByMonth()
-//                    .stream()
-//                    .map(entry -> {
-//                        String month = entry[0] != null ? entry[0].toString() : "Unknown";
-//                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
-//                        Map<String, Object> result = new HashMap<>();
-//                        result.put("name", month);
-//                        result.put("count", count);
-//                        return result;
-//                    })
-//                    .collect(Collectors.toList());
-//
-//            return new ApplicationStatsDTO(totalApplications, applicationsByStatus, applicationsByMonth);
-//        } catch (Exception e) {
-//            logger.error("Error retrieving application statistics: {}", e.getMessage());
-//            return new ApplicationStatsDTO(0, Collections.emptyList(), Collections.emptyList());
-//        }
-//    }
+    private ApplicationStatsDTO getApplicationStatistics() {
+        try {
+            // Lấy tổng số applications
+            long totalApplications = jobApplicationRepository.count();
+            logger.info("Total applications: {}", totalApplications);
+
+            // Lấy applications theo status
+            List<Map<String, Object>> applicationsByStatus = jobApplicationRepository.countApplicationsByStatus()
+                    .stream()
+                    .map(entry -> {
+                        String status = entry[0] != null ? entry[0].toString() : "Unknown";
+                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("name", status);
+                        result.put("count", count);
+                        return result;
+                    })
+                    .collect(Collectors.toList());
+            logger.info("Applications by status: {}", applicationsByStatus);
+
+            // Lấy applications theo tháng
+            List<Map<String, Object>> applicationsByMonth = jobApplicationRepository.countApplicationsByMonth()
+                    .stream()
+                    .map(entry -> {
+                        String month = entry[0] != null ? entry[0].toString() : "Unknown";
+                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("name", month);
+                        result.put("count", count);
+                        return result;
+                    })
+                    .collect(Collectors.toList());
+            logger.info("Applications by month: {}", applicationsByMonth);
+
+            // Kiểm tra null và trả về kết quả
+            if (applicationsByMonth == null) {
+                applicationsByMonth = Collections.emptyList();
+            }
+            if (applicationsByStatus == null) {
+                applicationsByStatus = Collections.emptyList();
+            }
+
+            return new ApplicationStatsDTO(totalApplications, applicationsByStatus, applicationsByMonth);
+        } catch (Exception e) {
+            logger.error("Error retrieving application statistics: {}", e.getMessage(), e);
+            return new ApplicationStatsDTO(0, Collections.emptyList(), Collections.emptyList());
+        }
+    }
 
     private UserStatsDTO getUserStatistics() {
         try {

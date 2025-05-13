@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -42,4 +43,11 @@ public class JobApplication {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private EApplyStatus status = EApplyStatus.PENDING; // Mặc định
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.appliedAt == null) {
+            this.appliedAt = new Timestamp(System.currentTimeMillis());
+        }
+    }
 }
