@@ -64,10 +64,22 @@ public class ReportServiceImpl implements ReportService {
                     })
                     .collect(Collectors.toList());
 
-            return new JobStatsDTO(totalJobs, activeJobs, inactiveJobs, jobsByType);
+            List<Map<String, Object>> jobsByMonth = jobRepository.countJobsByMonth()
+                    .stream()
+                    .map(entry -> {
+                        String month = entry[0] != null ? entry[0].toString() : "Unknown";
+                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("name", month);
+                        result.put("count", count);
+                        return result;
+                    })
+                    .collect(Collectors.toList());
+
+            return new JobStatsDTO(totalJobs, activeJobs, inactiveJobs, jobsByType, jobsByMonth);
         } catch (Exception e) {
             logger.error("Error retrieving job statistics: {}", e.getMessage());
-            return new JobStatsDTO(0, 0, 0, Collections.emptyList());
+            return new JobStatsDTO(0, 0, 0, Collections.emptyList(), Collections.emptyList());
         }
     }
 

@@ -8,7 +8,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-
 public class JobFilterRequest {
     private String name;
     private LocalDate dateFrom;
@@ -18,4 +17,6 @@ public class JobFilterRequest {
     private List<String> tags;
     private Long employerId;
     private String jobType;
+    // Thêm trường isActive để kiểm soát việc hiển thị công việc active/inactive
+    private Boolean isActive;
 }
