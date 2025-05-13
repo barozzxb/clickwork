@@ -41,4 +41,5 @@ public interface AccountService {
 	Response sendAdminEmail(String subject, String message, List<String> emails, String role);
 
     ResponseEntity<Response> changePassword(ChangePasswordRequest request);
+	ResponseEntity<Response> activeAccount(String username);
 }
