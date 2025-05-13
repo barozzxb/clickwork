@@ -35,7 +35,7 @@ public class ReportServiceImpl implements ReportService {
         try {
             StatisticsDTO report = new StatisticsDTO();
             report.setJobStats(getJobStatistics());
-            report.setApplicationStats(getApplicationStatistics());
+          //  report.setApplicationStats(getApplicationStatistics());
             report.setUserStats(getUserStatistics());
             report.setJobCategories(getJobCategories());
             report.setViolationStats(getViolationStatistics());
@@ -71,40 +71,40 @@ public class ReportServiceImpl implements ReportService {
         }
     }
 
-    private ApplicationStatsDTO getApplicationStatistics() {
-        try {
-            long totalApplications = jobApplicationRepository.count();
-
-            List<Map<String, Object>> applicationsByStatus = jobApplicationRepository.countApplicationsByStatus()
-                    .stream()
-                    .map(entry -> {
-                        String status = entry[0] != null ? entry[0].toString() : "Unknown";
-                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("name", status);
-                        result.put("count", count);
-                        return result;
-                    })
-                    .collect(Collectors.toList());
-
-            List<Map<String, Object>> applicationsByMonth = jobApplicationRepository.countApplicationsByMonth()
-                    .stream()
-                    .map(entry -> {
-                        String month = entry[0] != null ? entry[0].toString() : "Unknown";
-                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("name", month);
-                        result.put("count", count);
-                        return result;
-                    })
-                    .collect(Collectors.toList());
-
-            return new ApplicationStatsDTO(totalApplications, applicationsByStatus, applicationsByMonth);
-        } catch (Exception e) {
-            logger.error("Error retrieving application statistics: {}", e.getMessage());
-            return new ApplicationStatsDTO(0, Collections.emptyList(), Collections.emptyList());
-        }
-    }
+//    private ApplicationStatsDTO getApplicationStatistics() {
+//        try {
+//            long totalApplications = jobApplicationRepository.count();
+//
+//            List<Map<String, Object>> applicationsByStatus = jobApplicationRepository.countApplicationsByStatus()
+//                    .stream()
+//                    .map(entry -> {
+//                        String status = entry[0] != null ? entry[0].toString() : "Unknown";
+//                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
+//                        Map<String, Object> result = new HashMap<>();
+//                        result.put("name", status);
+//                        result.put("count", count);
+//                        return result;
+//                    })
+//                    .collect(Collectors.toList());
+//
+//            List<Map<String, Object>> applicationsByMonth = jobApplicationRepository.countApplicationsByMonth()
+//                    .stream()
+//                    .map(entry -> {
+//                        String month = entry[0] != null ? entry[0].toString() : "Unknown";
+//                        long count = entry[1] != null ? ((Number) entry[1]).longValue() : 0L;
+//                        Map<String, Object> result = new HashMap<>();
+//                        result.put("name", month);
+//                        result.put("count", count);
+//                        return result;
+//                    })
+//                    .collect(Collectors.toList());
+//
+//            return new ApplicationStatsDTO(totalApplications, applicationsByStatus, applicationsByMonth);
+//        } catch (Exception e) {
+//            logger.error("Error retrieving application statistics: {}", e.getMessage());
+//            return new ApplicationStatsDTO(0, Collections.emptyList(), Collections.emptyList());
+//        }
+//    }
 
     private UserStatsDTO getUserStatistics() {
         try {
