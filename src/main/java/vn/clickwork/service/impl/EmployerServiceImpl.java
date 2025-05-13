@@ -9,11 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Employer;
+import vn.clickwork.entity.Address;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.EmployerDetailRequest;
 import vn.clickwork.model.dto.EmployerProfileDTO;
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.EmployerRepository;
+import vn.clickwork.repository.AddressRepository;
 import vn.clickwork.service.EmployerService;
 
 import java.io.IOException;
@@ -32,6 +34,9 @@ public class EmployerServiceImpl implements EmployerService {
 
     @Autowired
     private AccountRepository accountRepo;
+
+    @Autowired
+    private AddressRepository addressRepository;
 
     @Override
     public ResponseEntity<Response> update(EmployerDetailRequest employer) {
@@ -132,39 +137,9 @@ public class EmployerServiceImpl implements EmployerService {
     }
 
     @Override
-    public Response getProfile(String username) {
+    public EmployerProfileDTO getProfile(String username) {
         Employer employer = employerRepository.findByAccount_Username(username)
-                .orElse(null);
-        if (employer == null) {
-            return new Response(false, "Không tìm thấy employer", null);
-        }
-        EmployerProfileDTO dto = mapToDTO(employer);
-        return new Response(true, "Lấy thông tin thành công", dto);
-    }
-
-    @Override
-    public Response updateProfile(String username, EmployerProfileDTO dto) {
-        Employer employer = employerRepository.findByAccount_Username(username)
-                .orElse(null);
-        if (employer == null) {
-            return new Response(false, "Không tìm thấy employer", null);
-        }
-        // Không cho đổi username, email
-        employer.setFullname(dto.getFullname());
-        employer.setPhonenum(dto.getPhonenum());
-        employer.setAvatar(dto.getAvatar());
-        employer.setWebsite(dto.getWebsite());
-        employer.setTaxnumber(dto.getTaxnumber());
-        employer.setField(dto.getField());
-        employer.setWorkingdays(dto.getWorkingdays());
-        employer.setCompanysize(dto.getCompanysize());
-        employer.setSociallink(dto.getSociallink());
-        employer.setOverview(dto.getOverview());
-        employerRepository.save(employer);
-        return new Response(true, "Cập nhật thành công", mapToDTO(employer));
-    }
-
-    private EmployerProfileDTO mapToDTO(Employer employer) {
+                .orElseThrow(() -> new RuntimeException("Employer not found"));
         EmployerProfileDTO dto = new EmployerProfileDTO();
         dto.setUsername(employer.getAccount().getUsername());
         dto.setFullname(employer.getFullname());
@@ -177,6 +152,74 @@ public class EmployerServiceImpl implements EmployerService {
         dto.setCompanysize(employer.getCompanysize());
         dto.setSociallink(employer.getSociallink());
         dto.setOverview(employer.getOverview());
+
+        // Map address
+        List<EmployerProfileDTO.AddressDTO> addressDTOs = employer.getAddresses().stream().map(addr -> {
+            EmployerProfileDTO.AddressDTO a = new EmployerProfileDTO.AddressDTO();
+            a.setId(addr.getId());
+            a.setNation(addr.getNation());
+            a.setProvince(addr.getProvince());
+            a.setDistrict(addr.getDistrict());
+            a.setVillage(addr.getVillage());
+            a.setDetail(addr.getDetail());
+            return a;
+        }).toList();
+        dto.setAddresses(addressDTOs);
         return dto;
+    }
+
+    @Override
+    public void updateProfile(String username, EmployerProfileDTO dto) {
+        Employer employer = employerRepository.findByAccount_Username(username)
+                .orElseThrow(() -> new RuntimeException("Employer not found"));
+        // Không cập nhật username, email
+        employer.setFullname(dto.getFullname());
+        employer.setPhonenum(dto.getPhonenum());
+        employer.setAvatar(dto.getAvatar());
+        employer.setWebsite(dto.getWebsite());
+        employer.setTaxnumber(dto.getTaxnumber());
+        employer.setField(dto.getField());
+        employer.setWorkingdays(dto.getWorkingdays());
+        employer.setCompanysize(dto.getCompanysize());
+        employer.setSociallink(dto.getSociallink());
+        employer.setOverview(dto.getOverview());
+        employerRepository.save(employer);
+    }
+
+    @Override
+    public void addAddress(String username, EmployerProfileDTO.AddressDTO addressDTO) {
+        Employer employer = employerRepository.findByAccount_Username(username)
+                .orElseThrow(() -> new RuntimeException("Employer not found"));
+        Address address = new Address();
+        address.setNation(addressDTO.getNation());
+        address.setProvince(addressDTO.getProvince());
+        address.setDistrict(addressDTO.getDistrict());
+        address.setVillage(addressDTO.getVillage());
+        address.setDetail(addressDTO.getDetail());
+        address.setEmployer(employer);
+        addressRepository.save(address);
+    }
+
+    @Override
+    public void updateAddress(String username, Long addressId, EmployerProfileDTO.AddressDTO addressDTO) {
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+        // Có thể kiểm tra
+        // address.getEmployer().getAccount().getUsername().equals(username)
+        address.setNation(addressDTO.getNation());
+        address.setProvince(addressDTO.getProvince());
+        address.setDistrict(addressDTO.getDistrict());
+        address.setVillage(addressDTO.getVillage());
+        address.setDetail(addressDTO.getDetail());
+        addressRepository.save(address);
+    }
+
+    @Override
+    public void deleteAddress(String username, Long addressId) {
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+        // Có thể kiểm tra
+        // address.getEmployer().getAccount().getUsername().equals(username)
+        addressRepository.delete(address);
     }
 }

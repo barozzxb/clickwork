@@ -168,6 +168,23 @@ public class NotificationServiceImpl implements NotificationService {
         return new Response(true, "Lấy thông báo thành công", dtos);
     }
 
+    @Override
+    @Transactional
+    public void markEmployerNotificationAsRead(String username, Long notificationId) {
+        Employer employer = employerRepository.findByAccount_Username(username)
+                .orElseThrow(() -> new RuntimeException("Employer not found"));
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        // Kiểm tra notification có thuộc employer này không
+        if (employer.getNotifications() == null || !employer.getNotifications().contains(notification)) {
+            throw new RuntimeException("Notification does not belong to this employer");
+        }
+
+        notification.setRead(true);
+        notificationRepository.save(notification);
+    }
+
     private NotificationDTO mapToNotificationDTO(Notification notification) {
         NotificationDTO dto = new NotificationDTO();
         dto.setId(notification.getId());

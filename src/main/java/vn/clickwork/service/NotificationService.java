@@ -39,4 +39,6 @@ public interface NotificationService {
     void createNotificationForApplicant(vn.clickwork.entity.Applicant applicant, String content);
 
     Response getEmployerNotifications(String username);
+
+    void markEmployerNotificationAsRead(String username, Long notificationId);
 }
