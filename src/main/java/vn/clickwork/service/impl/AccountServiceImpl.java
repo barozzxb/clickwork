@@ -126,15 +126,30 @@ public class AccountServiceImpl implements AccountService {
 		if (optAcc.isPresent()) {
 			Account acc = optAcc.get();
 
-			if (acc.getStatus() == EAccountStatus.SUSPENDED) {
-				String suspendedUntilMessage = "";
-				if (acc.getSuspendedUntil() != null) {
-					suspendedUntilMessage = " đến " + acc.getSuspendedUntil().toString();
-				}
-				return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, null);
-			}
+			
+			
 
 			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword())) {
+				
+				if (acc.getStatus() == EAccountStatus.INACTIVE) {
+					
+					HashMap<String, Object> data = new HashMap<>();
+					data.put("accStatus", acc.getStatus());
+					
+					return new Response(false, "Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để kích hoạt tài khoản",
+							data);
+				}
+				
+				if (acc.getStatus() == EAccountStatus.SUSPENDED) {
+					String suspendedUntilMessage = "";
+					HashMap<String, Object> data = new HashMap<>();
+					if (acc.getSuspendedUntil() != null) {
+						suspendedUntilMessage = " đến " + acc.getSuspendedUntil().toString();
+						data.put("accStatus", acc.getStatus());
+					}
+					return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, data);
+				}
+				
 				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
 				Map<String, Object> data = new HashMap<>();
 				data.put("token", token);
@@ -1010,6 +1025,27 @@ public class AccountServiceImpl implements AccountService {
 			logger.error("Lỗi khi đổi mật khẩu: {}", e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new Response(false, "Không thể đổi mật khẩu: " + e.getMessage(), null));
+		}
+	}
+	
+	@Override
+	public ResponseEntity<Response> activeAccount(String username) {
+		try {
+			Optional<Account> optaccount = accRepo.findById(username);
+			if (optaccount.isEmpty()) {
+				return ResponseEntity.ok()
+						.body(new Response(false, "Tài khoản không tồn tại", null));
+			}
+			Account account = optaccount.get();
+			
+			account.setStatus(EAccountStatus.ACTIVE);
+			accRepo.save(account);
+
+			return ResponseEntity.ok().body(new Response(true, "Kích hoạt tài khoản thành công", null));
+		} catch (Exception e) {
+			logger.error("Lỗi khi kích hoạt tài khoản: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new Response(false, "Kích hoạt tài khoản thất bại", null));
 		}
 	}
 }

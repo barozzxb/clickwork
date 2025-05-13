@@ -68,6 +68,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/support/**").permitAll() 
 						.requestMatchers("/api/saved-jobs/**").permitAll() 
 						.requestMatchers("/api/applications/**").permitAll() 
+						.requestMatchers("/api/search/**").permitAll()
 						.requestMatchers("/api/applicant/**").hasRole("APPLICANT")
 						.requestMatchers("/api/employer/**").permitAll()
 						.requestMatchers("/employer/**").hasRole("EMPLOYER")

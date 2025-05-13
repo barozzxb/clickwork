@@ -30,4 +30,9 @@ public class AuthAPI {
 	public ResponseEntity<?> register(@RequestBody RegisterRequest registerModel) {
 		return new ResponseEntity<Response>(accServ.register(registerModel), HttpStatus.OK);
 	}
+	
+	@PostMapping("/active-account")
+	public ResponseEntity<?> activeAccount(@RequestBody String username) {
+		return accServ.activeAccount(username);
+	}
 }
