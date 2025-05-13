@@ -1,7 +1,12 @@
 package vn.clickwork.service.impl;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -22,7 +27,6 @@ import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.AddressRepository;
 import vn.clickwork.repository.AdminRepository;
 import vn.clickwork.service.AdminProfileService;
-import vn.clickwork.service.FileStorageService;
 import vn.clickwork.util.PasswordUtil;
 
 @Service
@@ -35,6 +39,10 @@ public class AdminProfileServiceImpl implements AdminProfileService {
     private static final Pattern URL_PATTERN = Pattern.compile("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$");
 
+    // Define the absolute path for avatar uploads
+    private static final String UPLOAD_DIR = "uploads/avatar/";
+    private static final String AVATAR_URL_PREFIX = "/uploads/avatar/";
+
     @Autowired
     private AdminRepository adminRepository;
 
@@ -46,9 +54,6 @@ public class AdminProfileServiceImpl implements AdminProfileService {
 
     @Autowired
     private PasswordUtil passwordUtil;
-
-    @Autowired
-    private FileStorageService fileStorageService;
 
     @Override
     public AdminProfileDTO getAdminProfile(String username) {
@@ -103,16 +108,68 @@ public class AdminProfileServiceImpl implements AdminProfileService {
         // Handle avatar upload if provided
         if (avatarFile != null && !avatarFile.isEmpty()) {
             try {
-                // If there's an existing avatar, delete it first
-                if (admin.getAvatar() != null && !admin.getAvatar().isEmpty()) {
-                    fileStorageService.deleteFile(admin.getAvatar());
+                // Validate file type
+                String contentType = avatarFile.getContentType();
+                if (!List.of("image/jpeg", "image/png", "image/gif", "image/jpg").contains(contentType)) {
+                    logger.error("Invalid file type: {}", contentType);
+                    throw new IllegalArgumentException("Only JPEG, PNG, JPG, or GIF files are allowed");
                 }
 
-                // Store the new avatar in /Uploads/avatar/
-                String avatarUrl = fileStorageService.storeFile(avatarFile, "avatars");
-                admin.setAvatar(avatarUrl);
+                // Validate file size (max 2MB)
+                if (avatarFile.getSize() > 2 * 1024 * 1024) {
+                    logger.error("File size exceeds 2MB");
+                    throw new IllegalArgumentException("File size must not exceed 2MB");
+                }
+
+                // Delete existing avatar if present
+                if (admin.getAvatar() != null && !admin.getAvatar().isEmpty()) {
+                    try {
+                        // Extract filename from avatar URL
+                        String existingAvatarPath = admin.getAvatar();
+                        if (existingAvatarPath.startsWith(AVATAR_URL_PREFIX)) {
+                            existingAvatarPath = existingAvatarPath.substring(AVATAR_URL_PREFIX.length());
+                        }
+
+                        // Create absolute path to the file
+                        String projectRoot = new File("").getAbsolutePath();
+                        File existingFile = new File(projectRoot, UPLOAD_DIR + existingAvatarPath);
+                        if (existingFile.exists()) {
+                            existingFile.delete();
+                            logger.info("Deleted existing avatar: {}", existingAvatarPath);
+                        } else {
+                            logger.warn("Existing avatar file not found: {}", existingAvatarPath);
+                        }
+                    } catch (Exception e) {
+                        logger.warn("Failed to delete existing avatar: {}", e.getMessage());
+                    }
+                }
+
+                // Generate unique filename
+                String originalFilename = avatarFile.getOriginalFilename();
+                String fileExtension = originalFilename != null && originalFilename.contains(".")
+                        ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                        : ".png";
+                String fileName = UUID.randomUUID() + fileExtension;
+
+                // Get the project root directory (where src and Uploads are located)
+                String projectRoot = new File("").getAbsolutePath();
+                File uploadDir = new File(projectRoot, UPLOAD_DIR);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                    logger.info("Created avatar upload directory: {}", uploadDir.getAbsolutePath());
+                }
+
+                // Save the file
+                File destFile = new File(uploadDir, fileName);
+                avatarFile.transferTo(destFile);
+                logger.info("Saved avatar file to: {}", destFile.getAbsolutePath());
+
+                // Construct URL for database
+                String fileUrl = AVATAR_URL_PREFIX + fileName;
+                admin.setAvatar(fileUrl);
+                logger.info("Uploaded new avatar: {}", fileUrl);
             } catch (Exception e) {
-                logger.error("Failed to upload avatar: {}", e.getMessage());
+                logger.error("Failed to upload avatar: {}", e.getMessage(), e);
                 throw new RuntimeException("Failed to upload avatar: " + e.getMessage());
             }
         }

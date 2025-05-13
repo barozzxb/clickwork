@@ -19,7 +19,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -35,6 +34,7 @@ import vn.clickwork.enumeration.ERole;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.dto.AccountDTO;
 import vn.clickwork.model.dto.ReportDTO;
+import vn.clickwork.model.request.ChangePasswordRequest;
 import vn.clickwork.model.request.LoginRequest;
 import vn.clickwork.model.request.RegisterRequest;
 
@@ -51,23 +51,21 @@ import vn.clickwork.util.JwtUtils;
 import vn.clickwork.util.PasswordUtil;
 
 @Service
-public class AccountServiceImpl implements AccountService{
+public class AccountServiceImpl implements AccountService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
 
-	private static final Pattern EMAIL_PATTERN = Pattern.compile(
-			"^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
-	);
+	private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
 	@Autowired
 	AccountRepository accRepo;
-	
+
 	@Autowired
 	ApplicantRepository appRepo;
-	
+
 	@Autowired
 	EmployerRepository empRepo;
-	
+
 	@Autowired
 	AdminRepository adminRepo;
 
@@ -76,7 +74,7 @@ public class AccountServiceImpl implements AccountService{
 
 	@Autowired
 	PasswordUtil passwordUtil;
-	
+
 	@Autowired
 	JwtUtils jwtUtils;
 
@@ -119,23 +117,7 @@ public class AccountServiceImpl implements AccountService{
 
 	@Override
 	public Response login(LoginRequest loginModel) {
-/* baochau
-		Optional<Account> optAcc = this.findByUsername(loginModel.getUsername());
-		if (optAcc.isPresent()) {
-			Account acc = optAcc.get();
-			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword())) {
-				// Tạo JWT token cho tài khoản
-				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
-				
-				Map<String, Object> body = new HashMap<>();
-//	            body.put("username", acc.getUsername());
-//	            body.put("role", acc.getRole());
-	            body.put("token", token);
-	            
-				return new Response(true, "Đăng nhập thành công", body);
-			}
-			else {
-*/
+		
 		if (loginModel.getUsername() == null || loginModel.getPassword() == null) {
 			return new Response(false, "Vui lòng nhập đầy đủ thông tin đăng nhập", null);
 		}
@@ -156,6 +138,7 @@ public class AccountServiceImpl implements AccountService{
 				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
 				Map<String, Object> data = new HashMap<>();
 				data.put("token", token);
+				data.put("status", acc.getStatus());
 				return new Response(true, "Đăng nhập thành công", data);
 			} else {
 				return new Response(false, "Sai thông tin đăng nhập", null);
@@ -168,49 +151,39 @@ public class AccountServiceImpl implements AccountService{
 	public Response register(RegisterRequest model) {
 		Optional<Account> optAcc = this.findByUsername(model.getUsername());
 		if (optAcc.isPresent()) {
-			return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác", null);
-/* baochau
-		} else {
-			String hashedPassword = passwordUtil.hashPassword(model.getPassword());
-			Account acc = new Account(model.getUsername(), hashedPassword, model.getRole());
-			if (model.getRole() == ERole.APPLICANT) {
-				Applicant applicant = new Applicant();
-				applicant.setAccount(acc);
-				applicant.setEmail(model.getEmail());
-				acc.setApplicant(applicant);
-			} else if (model.getRole() == ERole.EMPLOYER) {
-				 Employer employer = new Employer();
-				 employer.setAccount(acc);
-				 employer.setEmail(model.getEmail());
-				 acc.setEmployer(employer);
-			}
-			accRepo.save(acc);
-			return new Response(true, "Đăng ký thành công", acc);
-		}
-*/
+			return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác",
+					null);
 		}
 
 		if (isExistByEmail(model.getEmail())) {
-			return new Response(false, "Email này đã được dùng để đăng ký một tài khoản khác, vui lòng chọn email khác", null);
+			return new Response(false, "Email này đã được dùng để đăng ký một tài khoản khác, vui lòng chọn email khác",
+					null);
 		}
 
 		String hashedPassword = passwordUtil.hashPassword(model.getPassword());
 		Account acc = new Account(model.getUsername(), hashedPassword, model.getRole());
-		acc.setStatus(EAccountStatus.ACTIVE);
+		acc.setStatus(EAccountStatus.INACTIVE);
 		if (model.getRole() == ERole.APPLICANT) {
 			Applicant applicant = new Applicant();
 			applicant.setAccount(acc);
 			applicant.setEmail(model.getEmail());
-			String fileUrl = "/Uploads/avatar/user_default.png";
+			String fileUrl = "/uploads/avatar/user_default.png";
 			applicant.setAvatar(fileUrl);
 			acc.setApplicant(applicant);
 		} else if (model.getRole() == ERole.EMPLOYER) {
 			Employer employer = new Employer();
 			employer.setAccount(acc);
 			employer.setEmail(model.getEmail());
-			String fileUrl = "/Uploads/avatar/user_default.png";
+			String fileUrl = "/uploads/avatar/user_default.png";
 			employer.setAvatar(fileUrl);
 			acc.setEmployer(employer);
+		} else if (model.getRole() == ERole.ADMIN) {
+			Admin admin = new Admin();
+			admin.setAccount(acc);
+			admin.setEmail(model.getEmail());
+			String fileUrl = "/uploads/avatar/user_default.png";
+			admin.setAvatar(fileUrl);
+			acc.setAdmin(admin);
 		}
 		accRepo.save(acc);
 		return new Response(true, "Đăng ký thành công", acc);
@@ -219,12 +192,14 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public ResponseEntity<Response> requestResetPassword(String email) {
 		if (email == null) {
-			return new ResponseEntity<>(new Response(false, "Bạn phải nhập email để tiếp tục", null), HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>(new Response(false, "Bạn phải nhập email để tiếp tục", null),
+					HttpStatus.BAD_REQUEST);
 		}
 
 		Account acc = getAccountByEmail(email);
 		if (acc == null) {
-			return new ResponseEntity<>(new Response(false, "Email chưa được dùng để đăng ký. Vui lòng thử lại", null), HttpStatus.NOT_FOUND);
+			return new ResponseEntity<>(new Response(false, "Email chưa được dùng để đăng ký. Vui lòng thử lại", null),
+					HttpStatus.NOT_FOUND);
 		}
 
 		return new ResponseEntity<>(new Response(true, "Email hợp lệ", null), HttpStatus.OK);
@@ -236,11 +211,13 @@ public class AccountServiceImpl implements AccountService{
 		String newPassword = passwordUtil.hashPassword(model.getPassword());
 		acc.setPassword(newPassword);
 		accRepo.save(acc);
-		return new ResponseEntity<>(new Response(true, "Mật khẩu mới đã được gửi đến email của bạn", null), HttpStatus.OK);
+		return new ResponseEntity<>(new Response(true, "Mật khẩu mới đã được gửi đến email của bạn", null),
+				HttpStatus.OK);
 	}
 
 	private boolean isExistByEmail(String email) {
-		return appRepo.findByEmail(email) != null || empRepo.findByEmail(email) != null || adminRepo.findByEmail(email) != null;
+		return appRepo.findByEmail(email) != null || empRepo.findByEmail(email) != null
+				|| adminRepo.findByEmail(email) != null;
 	}
 
 	private Account getAccountByEmail(String email) {
@@ -315,8 +292,8 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public Response getAllAccounts(int page, int size, String search, String role, String status) {
 		try {
-			logger.info("Fetching accounts: page={}, size={}, search='{}', role='{}', status='{}'",
-					page, size, search, role, status);
+			logger.info("Fetching accounts: page={}, size={}, search='{}', role='{}', status='{}'", page, size, search,
+					role, status);
 
 			Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
 			Pageable pageable = PageRequest.of(page, size, sort);
@@ -328,12 +305,25 @@ public class AccountServiceImpl implements AccountService{
 					String searchPattern = "%" + search.toLowerCase() + "%";
 					List<Predicate> searchPredicates = new ArrayList<>();
 					searchPredicates.add(cb.like(cb.lower(root.get("username")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("admin", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("admin", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(
+									root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("admin", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("admin", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
 					predicates.add(cb.or(searchPredicates.toArray(new Predicate[0])));
 				}
 
@@ -349,8 +339,7 @@ public class AccountServiceImpl implements AccountService{
 			};
 
 			Page<Account> accountPage = accRepo.findAll(spec, pageable);
-			List<AccountDTO> dtos = accountPage.getContent().stream()
-					.map(this::mapToAccountDTO)
+			List<AccountDTO> dtos = accountPage.getContent().stream().map(this::mapToAccountDTO)
 					.collect(Collectors.toList());
 
 			Map<String, Object> responseData = new HashMap<>();
@@ -369,8 +358,8 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public Response getAccountByUsername(String username) {
 		try {
-			Account account = accRepo.findById(username)
-					.orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
+			Account account = accRepo.findById(username).orElseThrow(
+					() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
 			return new Response(true, "Lấy chi tiết tài khoản thành công", mapToAccountDTO(account));
 		} catch (Exception e) {
 			logger.error("Lỗi khi lấy chi tiết tài khoản: {}", e.getMessage(), e);
@@ -381,8 +370,8 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public Response suspendAccount(String username) {
 		try {
-			Account account = accRepo.findById(username)
-					.orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
+			Account account = accRepo.findById(username).orElseThrow(
+					() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
 
 			if (account.getStatus() == EAccountStatus.SUSPENDED) {
 				return new Response(false, "Tài khoản đã bị khóa", null);
@@ -392,45 +381,29 @@ public class AccountServiceImpl implements AccountService{
 			account.setSuspendedUntil(new Timestamp(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 			accRepo.save(account);
 
-			String email = account.getApplicant() != null ? account.getApplicant().getEmail() :
-					account.getEmployer() != null ? account.getEmployer().getEmail() :
-							account.getAdmin() != null ? account.getAdmin().getEmail() : null;
+			String email = account.getApplicant() != null ? account.getApplicant().getEmail()
+					: account.getEmployer() != null ? account.getEmployer().getEmail()
+							: account.getAdmin() != null ? account.getAdmin().getEmail() : null;
 
 			if (email != null && !email.trim().isEmpty() && EMAIL_PATTERN.matcher(email).matches()) {
-				String emailContent = String.format(
-						"<!DOCTYPE html>" +
-								"<html lang=\"en\">" +
-								"<head>" +
-								"  <meta charset=\"UTF-8\"/>" +
-								"  <style>" +
-								"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
-								"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
-								"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
-								"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
-								"  </style>" +
-								"</head>" +
-								"<body>" +
-								"  <div class=\"container\">" +
-								"    <div class=\"header\">" +
-								"      <h2>ClickWork</h2>" +
-								"    </div>" +
-								"    <div class=\"content\">" +
-								"      <p>Chào %s,</p>" +
-								"      <p>Tài khoản của bạn (%s) đã bị khóa do vi phạm chính sách.</p>" +
-								"      <p>Thời gian khóa: 30 ngày, đến %s.</p>" +
-								"      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>" +
-								"    </div>" +
-								"    <div class=\"footer\">" +
-								"      © 2025 ClickWork. All rights reserved." +
-								"    </div>" +
-								"  </div>" +
-								"</body>" +
-								"</html>",
-						account.getApplicant() != null ? account.getApplicant().getFullname() :
-								account.getEmployer() != null ? account.getEmployer().getFullname() :
-										account.getAdmin() != null ? account.getAdmin().getFullname() : "Người dùng",
-						username, account.getSuspendedUntil().toString()
-				);
+				String emailContent = String.format("<!DOCTYPE html>" + "<html lang=\"en\">" + "<head>"
+						+ "  <meta charset=\"UTF-8\"/>" + "  <style>"
+						+ "    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
+						+ "    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
+						+ "    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
+						+ "    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
+						+ "  </style>" + "</head>" + "<body>" + "  <div class=\"container\">"
+						+ "    <div class=\"header\">" + "      <h2>ClickWork</h2>" + "    </div>"
+						+ "    <div class=\"content\">" + "      <p>Chào %s,</p>"
+						+ "      <p>Tài khoản của bạn (%s) đã bị khóa do vi phạm chính sách.</p>"
+						+ "      <p>Thời gian khóa: 30 ngày, đến %s.</p>"
+						+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>"
+						+ "    </div>" + "    <div class=\"footer\">" + "      © 2025 ClickWork. All rights reserved."
+						+ "    </div>" + "  </div>" + "</body>" + "</html>",
+						account.getApplicant() != null ? account.getApplicant().getFullname()
+								: account.getEmployer() != null ? account.getEmployer().getFullname()
+										: account.getAdmin() != null ? account.getAdmin().getFullname() : "Người dùng",
+						username, account.getSuspendedUntil().toString());
 				try {
 					emailService.sendEmail(email, "Thông báo khóa tài khoản", emailContent);
 					logger.info("Gửi email khóa tài khoản đến: {}", email);
@@ -451,8 +424,8 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public Response unsuspendAccount(String username) {
 		try {
-			Account account = accRepo.findById(username)
-					.orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
+			Account account = accRepo.findById(username).orElseThrow(
+					() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
 
 			if (account.getStatus() != EAccountStatus.SUSPENDED) {
 				return new Response(false, "Tài khoản không ở trạng thái khóa", null);
@@ -472,8 +445,8 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public Response deleteAccount(String username) {
 		try {
-			Account account = accRepo.findById(username)
-					.orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
+			Account account = accRepo.findById(username).orElseThrow(
+					() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
 
 			accRepo.delete(account);
 			return new Response(true, "Xóa tài khoản thành công", null);
@@ -486,8 +459,7 @@ public class AccountServiceImpl implements AccountService{
 	@Override
 	public Response getAllReports(int page, int size, String search, String status) {
 		try {
-			logger.info("Fetching reports: page={}, size={}, search='{}', status='{}'",
-					page, size, search, status);
+			logger.info("Fetching reports: page={}, size={}, search='{}', status='{}'", page, size, search, status);
 
 			Sort sort = Sort.by(Sort.Direction.DESC, "sendat");
 			Pageable pageable = PageRequest.of(page, size, sort);
@@ -500,14 +472,31 @@ public class AccountServiceImpl implements AccountService{
 					List<Predicate> searchPredicates = new ArrayList<>();
 					searchPredicates.add(cb.like(cb.lower(root.get("title")), searchPattern));
 					searchPredicates.add(cb.like(cb.lower(root.get("content")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("reportedapplicant", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("reportedapplicant", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("reportedemployer", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")), searchPattern));
-					searchPredicates.add(cb.like(cb.lower(root.join("reportedemployer", jakarta.persistence.criteria.JoinType.LEFT).get("email")), searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(
+									root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("applicant", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(
+							cb.lower(root.join("employer", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
+					searchPredicates.add(cb.like(cb.lower(
+							root.join("reportedapplicant", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(cb.lower(
+							root.join("reportedapplicant", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
+					searchPredicates.add(cb.like(cb.lower(
+							root.join("reportedemployer", jakarta.persistence.criteria.JoinType.LEFT).get("fullname")),
+							searchPattern));
+					searchPredicates.add(cb.like(cb.lower(
+							root.join("reportedemployer", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+							searchPattern));
 					predicates.add(cb.or(searchPredicates.toArray(new Predicate[0])));
 				}
 
@@ -519,8 +508,7 @@ public class AccountServiceImpl implements AccountService{
 			};
 
 			Page<Report> reportPage = reportRepository.findAll(spec, pageable);
-			List<ReportDTO> dtos = reportPage.getContent().stream()
-					.map(this::mapToReportDTO)
+			List<ReportDTO> dtos = reportPage.getContent().stream().map(this::mapToReportDTO)
 					.collect(Collectors.toList());
 
 			Map<String, Object> responseData = new HashMap<>();
@@ -558,55 +546,42 @@ public class AccountServiceImpl implements AccountService{
 			reportRepository.save(report);
 
 			if ("RESPONDED".equals(request.getStatus()) && request.isViolationConfirmed()) {
-				String reportedUsername = report.getReportedapplicant() != null ?
-						report.getReportedapplicant().getAccount().getUsername() :
-						report.getReportedemployer() != null ?
-								report.getReportedemployer().getAccount().getUsername() : null;
+				String reportedUsername = report.getReportedapplicant() != null
+						? report.getReportedapplicant().getAccount().getUsername()
+						: report.getReportedemployer() != null ? report.getReportedemployer().getAccount().getUsername()
+								: null;
 
 				if (reportedUsername != null) {
-					Account account = accRepo.findById(reportedUsername)
-							.orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + reportedUsername));
+					Account account = accRepo.findById(reportedUsername).orElseThrow(() -> new IllegalArgumentException(
+							"Không tìm thấy tài khoản với username: " + reportedUsername));
 					account.setStatus(EAccountStatus.SUSPENDED);
 					account.setSuspendedUntil(new Timestamp(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 					accRepo.save(account);
 
-					String email = report.getReportedapplicant() != null ? report.getReportedapplicant().getEmail() :
-							report.getReportedemployer() != null ? report.getReportedemployer().getEmail() : null;
+					String email = report.getReportedapplicant() != null ? report.getReportedapplicant().getEmail()
+							: report.getReportedemployer() != null ? report.getReportedemployer().getEmail() : null;
 
 					if (email != null && !email.trim().isEmpty() && EMAIL_PATTERN.matcher(email).matches()) {
-						String emailContent = String.format(
-								"<!DOCTYPE html>" +
-										"<html lang=\"en\">" +
-										"<head>" +
-										"  <meta charset=\"UTF-8\"/>" +
-										"  <style>" +
-										"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
-										"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
-										"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
-										"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
-										"  </style>" +
-										"</head>" +
-										"<body>" +
-										"  <div class=\"container\">" +
-										"    <div class=\"header\">" +
-										"      <h2>ClickWork</h2>" +
-										"    </div>" +
-										"    <div class=\"content\">" +
-										"      <p>Chào %s,</p>" +
-										"      <p>Tài khoản của bạn (%s) đã bị khóa do vi phạm chính sách (%s).</p>" +
-										"      <p>Thời gian khóa: 30 ngày, đến %s.</p>" +
-										"      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>" +
-										"    </div>" +
-										"    <div class=\"footer\">" +
-										"      © 2025 ClickWork. All rights reserved." +
-										"    </div>" +
-										"  </div>" +
-										"</body>" +
-										"</html>",
-								report.getReportedapplicant() != null ? report.getReportedapplicant().getFullname() :
-										report.getReportedemployer() != null ? report.getReportedemployer().getFullname() : "Người dùng",
-								reportedUsername, report.getTitle(), account.getSuspendedUntil().toString()
-						);
+						String emailContent = String.format("<!DOCTYPE html>" + "<html lang=\"en\">" + "<head>"
+								+ "  <meta charset=\"UTF-8\"/>" + "  <style>"
+								+ "    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
+								+ "    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
+								+ "    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
+								+ "    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
+								+ "  </style>" + "</head>" + "<body>" + "  <div class=\"container\">"
+								+ "    <div class=\"header\">" + "      <h2>ClickWork</h2>" + "    </div>"
+								+ "    <div class=\"content\">" + "      <p>Chào %s,</p>"
+								+ "      <p>Tài khoản của bạn (%s) đã bị khóa do vi phạm chính sách (%s).</p>"
+								+ "      <p>Thời gian khóa: 30 ngày, đến %s.</p>"
+								+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>"
+								+ "    </div>" + "    <div class=\"footer\">"
+								+ "      © 2025 ClickWork. All rights reserved." + "    </div>" + "  </div>" + "</body>"
+								+ "</html>",
+								report.getReportedapplicant() != null ? report.getReportedapplicant().getFullname()
+										: report.getReportedemployer() != null
+												? report.getReportedemployer().getFullname()
+												: "Người dùng",
+								reportedUsername, report.getTitle(), account.getSuspendedUntil().toString());
 						try {
 							emailService.sendEmail(email, "Thông báo khóa tài khoản", emailContent);
 							logger.info("Gửi email khóa tài khoản đến: {}", email);
@@ -614,7 +589,8 @@ public class AccountServiceImpl implements AccountService{
 							logger.warn("Không thể gửi email khóa tài khoản đến {}: {}", email, e.getMessage());
 						}
 					} else {
-						logger.warn("Email không hợp lệ hoặc không tồn tại cho tài khoản bị báo cáo: {}", reportedUsername);
+						logger.warn("Email không hợp lệ hoặc không tồn tại cho tài khoản bị báo cáo: {}",
+								reportedUsername);
 					}
 				}
 			}
@@ -631,8 +607,8 @@ public class AccountServiceImpl implements AccountService{
 		try {
 			logger.info("Updating account status: username={}, status='{}'", username, status);
 
-			Account account = accRepo.findById(username)
-					.orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
+			Account account = accRepo.findById(username).orElseThrow(
+					() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
 
 			// Ignore role parameter (kept for compatibility)
 			if (role != null && !role.trim().isEmpty()) {
@@ -645,47 +621,34 @@ public class AccountServiceImpl implements AccountService{
 					EAccountStatus newStatus = EAccountStatus.valueOf(status.toUpperCase());
 					if (account.getStatus() != newStatus) {
 						if (newStatus == EAccountStatus.SUSPENDED) {
-							account.setSuspendedUntil(new Timestamp(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
+							account.setSuspendedUntil(
+									new Timestamp(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 							// Send email notification
-							String email = account.getApplicant() != null ? account.getApplicant().getEmail() :
-									account.getEmployer() != null ? account.getEmployer().getEmail() :
-											account.getAdmin() != null ? account.getAdmin().getEmail() : null;
+							String email = account.getApplicant() != null ? account.getApplicant().getEmail()
+									: account.getEmployer() != null ? account.getEmployer().getEmail()
+											: account.getAdmin() != null ? account.getAdmin().getEmail() : null;
 
 							if (email != null && !email.trim().isEmpty() && EMAIL_PATTERN.matcher(email).matches()) {
-								String emailContent = String.format(
-										"<!DOCTYPE html>" +
-												"<html lang=\"en\">" +
-												"<head>" +
-												"  <meta charset=\"UTF-8\"/>" +
-												"  <style>" +
-												"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
-												"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
-												"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
-												"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
-												"  </style>" +
-												"</head>" +
-												"<body>" +
-												"  <div class=\"container\">" +
-												"    <div class=\"header\">" +
-												"      <h2>ClickWork</h2>" +
-												"    </div>" +
-												"    <div class=\"content\">" +
-												"      <p>Chào %s,</p>" +
-												"      <p>Tài khoản của bạn (%s) đã bị khóa do quyết định của quản trị viên.</p>" +
-												"      <p>Thời gian khóa: 30 ngày, đến %s.</p>" +
-												"      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>" +
-												"    </div>" +
-												"    <div class=\"footer\">" +
-												"      © 2025 ClickWork. All rights reserved." +
-												"    </div>" +
-												"  </div>" +
-												"</body>" +
-												"</html>",
-										account.getApplicant() != null ? account.getApplicant().getFullname() :
-												account.getEmployer() != null ? account.getEmployer().getFullname() :
-														account.getAdmin() != null ? account.getAdmin().getFullname() : "Người dùng",
-										username, account.getSuspendedUntil().toString()
-								);
+								String emailContent = String.format("<!DOCTYPE html>" + "<html lang=\"en\">" + "<head>"
+										+ "  <meta charset=\"UTF-8\"/>" + "  <style>"
+										+ "    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
+										+ "    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
+										+ "    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
+										+ "    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
+										+ "  </style>" + "</head>" + "<body>" + "  <div class=\"container\">"
+										+ "    <div class=\"header\">" + "      <h2>ClickWork</h2>" + "    </div>"
+										+ "    <div class=\"content\">" + "      <p>Chào %s,</p>"
+										+ "      <p>Tài khoản của bạn (%s) đã bị khóa do quyết định của quản trị viên.</p>"
+										+ "      <p>Thời gian khóa: 30 ngày, đến %s.</p>"
+										+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>"
+										+ "    </div>" + "    <div class=\"footer\">"
+										+ "      © 2025 ClickWork. All rights reserved." + "    </div>" + "  </div>"
+										+ "</body>" + "</html>",
+										account.getApplicant() != null ? account.getApplicant().getFullname()
+												: account.getEmployer() != null ? account.getEmployer().getFullname()
+														: account.getAdmin() != null ? account.getAdmin().getFullname()
+																: "Người dùng",
+										username, account.getSuspendedUntil().toString());
 								try {
 									emailService.sendEmail(email, "Thông báo khóa tài khoản", emailContent);
 									logger.info("Gửi email khóa tài khoản đến: {}", email);
@@ -738,12 +701,14 @@ public class AccountServiceImpl implements AccountService{
 			// Check if username exists
 			Optional<Account> optAcc = accRepo.findByUsername(model.getUsername());
 			if (optAcc.isPresent()) {
-				return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác", null);
+				return new Response(false, "Tài khoản với username tương ứng đã tồn tại, vui lòng chọn username khác",
+						null);
 			}
 
 			// Check if email exists
 			if (isExistByEmail(model.getEmail())) {
-				return new Response(false, "Email này đã được dùng để đăng ký một tài khoản khác, vui lòng chọn email khác", null);
+				return new Response(false,
+						"Email này đã được dùng để đăng ký một tài khoản khác, vui lòng chọn email khác", null);
 			}
 
 			// Check if admin already exists for this username
@@ -770,36 +735,19 @@ public class AccountServiceImpl implements AccountService{
 			accRepo.save(acc);
 
 			// Send welcome email
-			String emailContent = String.format(
-					"<!DOCTYPE html>" +
-							"<html lang=\"en\">" +
-							"<head>" +
-							"  <meta charset=\"UTF-8\"/>" +
-							"  <style>" +
-							"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
-							"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
-							"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
-							"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
-							"  </style>" +
-							"</head>" +
-							"<body>" +
-							"  <div class=\"container\">" +
-							"    <div class=\"header\">" +
-							"      <h2>ClickWork</h2>" +
-							"    </div>" +
-							"    <div class=\"content\">" +
-							"      <p>Chào Quản trị viên,</p>" +
-							"      <p>Tài khoản quản trị viên của bạn (%s) đã được tạo thành công.</p>" +
-							"      <p>Vui lòng đăng nhập để bắt đầu quản lý hệ thống.</p>" +
-							"    </div>" +
-							"    <div class=\"footer\">" +
-							"      © 2025 ClickWork. All rights reserved." +
-							"    </div>" +
-							"  </div>" +
-							"</body>" +
-							"</html>",
-					model.getUsername()
-			);
+			String emailContent = String.format("<!DOCTYPE html>" + "<html lang=\"en\">" + "<head>"
+					+ "  <meta charset=\"UTF-8\"/>" + "  <style>"
+					+ "    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
+					+ "    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
+					+ "    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
+					+ "    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
+					+ "  </style>" + "</head>" + "<body>" + "  <div class=\"container\">" + "    <div class=\"header\">"
+					+ "      <h2>ClickWork</h2>" + "    </div>" + "    <div class=\"content\">"
+					+ "      <p>Chào Quản trị viên,</p>"
+					+ "      <p>Tài khoản quản trị viên của bạn (%s) đã được tạo thành công.</p>"
+					+ "      <p>Vui lòng đăng nhập để bắt đầu quản lý hệ thống.</p>" + "    </div>"
+					+ "    <div class=\"footer\">" + "      © 2025 ClickWork. All rights reserved." + "    </div>"
+					+ "  </div>" + "</body>" + "</html>", model.getUsername());
 			try {
 				emailService.sendEmail(model.getEmail(), "Chào mừng quản trị viên mới", emailContent);
 				logger.info("Gửi email chào mừng đến: {}", model.getEmail());
@@ -825,80 +773,79 @@ public class AccountServiceImpl implements AccountService{
 
 			if (role == null || role.trim().isEmpty() || role.equalsIgnoreCase("ALL")) {
 				// Fetch all emails
-				List<Applicant> applicants = searchPattern != null ?
-						appRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
-						appRepo.findAll();
-				emails.addAll(applicants.stream()
-						.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
-						.map(a -> {
+				List<Applicant> applicants = searchPattern != null
+						? appRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern)
+						: appRepo.findAll();
+				emails.addAll(applicants.stream().filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty()
+						&& EMAIL_PATTERN.matcher(a.getEmail()).matches()).map(a -> {
 							Map<String, String> emailData = new HashMap<>();
 							emailData.put("email", a.getEmail());
 							emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
 							emailData.put("role", "APPLICANT");
 							return emailData;
-						})
-						.collect(Collectors.toList()));
+						}).collect(Collectors.toList()));
 
-				List<Employer> employers = searchPattern != null ?
-						empRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
-						empRepo.findAll();
-				emails.addAll(employers.stream()
-						.filter(e -> e.getEmail() != null && !e.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(e.getEmail()).matches())
-						.map(e -> {
+				List<Employer> employers = searchPattern != null
+						? empRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern)
+						: empRepo.findAll();
+				emails.addAll(employers.stream().filter(e -> e.getEmail() != null && !e.getEmail().trim().isEmpty()
+						&& EMAIL_PATTERN.matcher(e.getEmail()).matches()).map(e -> {
 							Map<String, String> emailData = new HashMap<>();
 							emailData.put("email", e.getEmail());
 							emailData.put("fullname", e.getFullname() != null ? e.getFullname() : "");
 							emailData.put("role", "EMPLOYER");
 							return emailData;
-						})
-						.collect(Collectors.toList()));
+						}).collect(Collectors.toList()));
 
-				List<Admin> admins = searchPattern != null ?
-						adminRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
-						adminRepo.findAll();
-				emails.addAll(admins.stream()
-						.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
-						.map(a -> {
+				List<Admin> admins = searchPattern != null
+						? adminRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern)
+						: adminRepo.findAll();
+				emails.addAll(admins.stream().filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty()
+						&& EMAIL_PATTERN.matcher(a.getEmail()).matches()).map(a -> {
 							Map<String, String> emailData = new HashMap<>();
 							emailData.put("email", a.getEmail());
 							emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
 							emailData.put("role", "ADMIN");
 							return emailData;
-						})
-						.collect(Collectors.toList()));
+						}).collect(Collectors.toList()));
 			} else if (role.equalsIgnoreCase("INACTIVE")) {
 				// Fetch emails for inactive accounts
 				List<Account> inactiveAccounts = accRepo.findAllByStatus(EAccountStatus.INACTIVE);
-				emails.addAll(inactiveAccounts.stream()
-						.map(account -> {
-							if (account.getApplicant() != null && (searchPattern == null ||
-									account.getApplicant().getEmail().toLowerCase().contains(searchPattern.replace("%", "")) ||
-									(account.getApplicant().getFullname() != null && account.getApplicant().getFullname().toLowerCase().contains(searchPattern.replace("%", ""))))) {
-								Map<String, String> emailData = new HashMap<>();
-								emailData.put("email", account.getApplicant().getEmail());
-								emailData.put("fullname", account.getApplicant().getFullname() != null ? account.getApplicant().getFullname() : "");
-								emailData.put("role", "APPLICANT");
-								return emailData;
-							} else if (account.getEmployer() != null && (searchPattern == null ||
-									account.getEmployer().getEmail().toLowerCase().contains(searchPattern.replace("%", "")) ||
-									(account.getEmployer().getFullname() != null && account.getEmployer().getFullname().toLowerCase().contains(searchPattern.replace("%", ""))))) {
-								Map<String, String> emailData = new HashMap<>();
-								emailData.put("email", account.getEmployer().getEmail());
-								emailData.put("fullname", account.getEmployer().getFullname() != null ? account.getEmployer().getFullname() : "");
-								emailData.put("role", "EMPLOYER");
-								return emailData;
-							} else if (account.getAdmin() != null && (searchPattern == null ||
-									account.getAdmin().getEmail().toLowerCase().contains(searchPattern.replace("%", "")) ||
-									(account.getAdmin().getFullname() != null && account.getAdmin().getFullname().toLowerCase().contains(searchPattern.replace("%", ""))))) {
-								Map<String, String> emailData = new HashMap<>();
-								emailData.put("email", account.getAdmin().getEmail());
-								emailData.put("fullname", account.getAdmin().getFullname() != null ? account.getAdmin().getFullname() : "");
-								emailData.put("role", "ADMIN");
-								return emailData;
-							}
-							return null;
-						})
-						.filter(data -> data != null && EMAIL_PATTERN.matcher(data.get("email")).matches())
+				emails.addAll(inactiveAccounts.stream().map(account -> {
+					if (account.getApplicant() != null && (searchPattern == null
+							|| account.getApplicant().getEmail().toLowerCase().contains(searchPattern.replace("%", ""))
+							|| (account.getApplicant().getFullname() != null && account.getApplicant().getFullname()
+									.toLowerCase().contains(searchPattern.replace("%", ""))))) {
+						Map<String, String> emailData = new HashMap<>();
+						emailData.put("email", account.getApplicant().getEmail());
+						emailData.put("fullname",
+								account.getApplicant().getFullname() != null ? account.getApplicant().getFullname()
+										: "");
+						emailData.put("role", "APPLICANT");
+						return emailData;
+					} else if (account.getEmployer() != null && (searchPattern == null
+							|| account.getEmployer().getEmail().toLowerCase().contains(searchPattern.replace("%", ""))
+							|| (account.getEmployer().getFullname() != null && account.getEmployer().getFullname()
+									.toLowerCase().contains(searchPattern.replace("%", ""))))) {
+						Map<String, String> emailData = new HashMap<>();
+						emailData.put("email", account.getEmployer().getEmail());
+						emailData.put("fullname",
+								account.getEmployer().getFullname() != null ? account.getEmployer().getFullname() : "");
+						emailData.put("role", "EMPLOYER");
+						return emailData;
+					} else if (account.getAdmin() != null && (searchPattern == null
+							|| account.getAdmin().getEmail().toLowerCase().contains(searchPattern.replace("%", ""))
+							|| (account.getAdmin().getFullname() != null && account.getAdmin().getFullname()
+									.toLowerCase().contains(searchPattern.replace("%", ""))))) {
+						Map<String, String> emailData = new HashMap<>();
+						emailData.put("email", account.getAdmin().getEmail());
+						emailData.put("fullname",
+								account.getAdmin().getFullname() != null ? account.getAdmin().getFullname() : "");
+						emailData.put("role", "ADMIN");
+						return emailData;
+					}
+					return null;
+				}).filter(data -> data != null && EMAIL_PATTERN.matcher(data.get("email")).matches())
 						.collect(Collectors.toList()));
 			} else {
 				// Fetch emails by role
@@ -910,60 +857,48 @@ public class AccountServiceImpl implements AccountService{
 				}
 
 				if (eRole == ERole.APPLICANT) {
-					List<Applicant> applicants = searchPattern != null ?
-							appRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
-							appRepo.findAll();
-					emails.addAll(applicants.stream()
-							.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
-							.map(a -> {
+					List<Applicant> applicants = searchPattern != null
+							? appRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern)
+							: appRepo.findAll();
+					emails.addAll(applicants.stream().filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty()
+							&& EMAIL_PATTERN.matcher(a.getEmail()).matches()).map(a -> {
 								Map<String, String> emailData = new HashMap<>();
 								emailData.put("email", a.getEmail());
 								emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
 								emailData.put("role", "APPLICANT");
 								return emailData;
-							})
-							.collect(Collectors.toList()));
+							}).collect(Collectors.toList()));
 				} else if (eRole == ERole.EMPLOYER) {
-					List<Employer> employers = searchPattern != null ?
-							empRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
-							empRepo.findAll();
-					emails.addAll(employers.stream()
-							.filter(e -> e.getEmail() != null && !e.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(e.getEmail()).matches())
-							.map(e -> {
+					List<Employer> employers = searchPattern != null
+							? empRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern)
+							: empRepo.findAll();
+					emails.addAll(employers.stream().filter(e -> e.getEmail() != null && !e.getEmail().trim().isEmpty()
+							&& EMAIL_PATTERN.matcher(e.getEmail()).matches()).map(e -> {
 								Map<String, String> emailData = new HashMap<>();
 								emailData.put("email", e.getEmail());
 								emailData.put("fullname", e.getFullname() != null ? e.getFullname() : "");
 								emailData.put("role", "EMPLOYER");
 								return emailData;
-							})
-							.collect(Collectors.toList()));
+							}).collect(Collectors.toList()));
 				} else if (eRole == ERole.ADMIN) {
-					List<Admin> admins = searchPattern != null ?
-							adminRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern) :
-							adminRepo.findAll();
-					emails.addAll(admins.stream()
-							.filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty() && EMAIL_PATTERN.matcher(a.getEmail()).matches())
-							.map(a -> {
+					List<Admin> admins = searchPattern != null
+							? adminRepo.findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(searchPattern, searchPattern)
+							: adminRepo.findAll();
+					emails.addAll(admins.stream().filter(a -> a.getEmail() != null && !a.getEmail().trim().isEmpty()
+							&& EMAIL_PATTERN.matcher(a.getEmail()).matches()).map(a -> {
 								Map<String, String> emailData = new HashMap<>();
 								emailData.put("email", a.getEmail());
 								emailData.put("fullname", a.getFullname() != null ? a.getFullname() : "");
 								emailData.put("role", "ADMIN");
 								return emailData;
-							})
-							.collect(Collectors.toList()));
+							}).collect(Collectors.toList()));
 				}
 			}
 
 			// Remove duplicates and sort
 			List<Map<String, String>> uniqueEmails = emails.stream()
-					.collect(Collectors.toMap(
-							map -> map.get("email"),
-							map -> map,
-							(existing, replacement) -> existing
-					))
-					.values()
-					.stream()
-					.sorted((a, b) -> a.get("email").compareTo(b.get("email")))
+					.collect(Collectors.toMap(map -> map.get("email"), map -> map, (existing, replacement) -> existing))
+					.values().stream().sorted((a, b) -> a.get("email").compareTo(b.get("email")))
 					.collect(Collectors.toList());
 			return new Response(true, "Lấy danh sách email thành công", uniqueEmails);
 		} catch (Exception e) {
@@ -1005,9 +940,7 @@ public class AccountServiceImpl implements AccountService{
 					return emailResponse;
 				}
 				List<Map<String, String>> roleEmails = (List<Map<String, String>>) emailResponse.getBody();
-				recipients.addAll(roleEmails.stream()
-						.map(map -> map.get("email"))
-						.collect(Collectors.toList()));
+				recipients.addAll(roleEmails.stream().map(map -> map.get("email")).collect(Collectors.toList()));
 			}
 
 			// Remove duplicates
@@ -1018,34 +951,16 @@ public class AccountServiceImpl implements AccountService{
 			}
 
 			// Build HTML content
-			String htmlContent = String.format(
-					"<!DOCTYPE html>" +
-							"<html lang=\"en\">" +
-							"<head>" +
-							"  <meta charset=\"UTF-8\"/>" +
-							"  <style>" +
-							"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
-							"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
-							"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
-							"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
-							"  </style>" +
-							"</head>" +
-							"<body>" +
-							"  <div class=\"container\">" +
-							"    <div class=\"header\">" +
-							"      <h2>ClickWork</h2>" +
-							"    </div>" +
-							"    <div class=\"content\">" +
-							"      <p>%s</p>" +
-							"    </div>" +
-							"    <div class=\"footer\">" +
-							"      © 2025 ClickWork. All rights reserved." +
-							"    </div>" +
-							"  </div>" +
-							"</body>" +
-							"</html>",
-					message.replace("\n", "<br>")
-			);
+			String htmlContent = String.format("<!DOCTYPE html>" + "<html lang=\"en\">" + "<head>"
+					+ "  <meta charset=\"UTF-8\"/>" + "  <style>"
+					+ "    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
+					+ "    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
+					+ "    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
+					+ "    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
+					+ "  </style>" + "</head>" + "<body>" + "  <div class=\"container\">" + "    <div class=\"header\">"
+					+ "      <h2>ClickWork</h2>" + "    </div>" + "    <div class=\"content\">" + "      <p>%s</p>"
+					+ "    </div>" + "    <div class=\"footer\">" + "      © 2025 ClickWork. All rights reserved."
+					+ "    </div>" + "  </div>" + "</body>" + "</html>", message.replace("\n", "<br>"));
 
 			// Send emails
 			for (String email : recipients) {
@@ -1061,6 +976,40 @@ public class AccountServiceImpl implements AccountService{
 		} catch (Exception e) {
 			logger.error("Lỗi khi gửi email: {}", e.getMessage(), e);
 			return new Response(false, "Không thể gửi email: " + e.getMessage(), null);
+		}
+	}
+
+	@Override
+	public ResponseEntity<Response> changePassword(ChangePasswordRequest request) {
+		try {
+			Optional<Account> account = accRepo.findById(request.getUsername());
+			if (account.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND)
+						.body(new Response(false, "Tài khoản không tồn tại", null));
+			}
+			if (!passwordUtil.verifyPassword(request.getOldPassword(), account.get().getPassword())) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body(new Response(false, "Mật khẩu cũ không chính xác", null));
+			}
+			if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.body(new Response(false, "Mật khẩu mới không hợp lệ", null));
+			}
+			if (request.getNewPassword().equals(request.getOldPassword())) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.body(new Response(false, "Mật khẩu mới không được giống mật khẩu cũ", null));
+			}
+			
+			Account acc = account.get();
+			
+			acc.setPassword(passwordUtil.hashPassword(request.getNewPassword()));
+			accRepo.save(acc);
+			return ResponseEntity.ok(new Response(true, "Đổi mật khẩu thành công", null));
+			
+		} catch (Exception e) {
+			logger.error("Lỗi khi đổi mật khẩu: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new Response(false, "Không thể đổi mật khẩu: " + e.getMessage(), null));
 		}
 	}
 }
