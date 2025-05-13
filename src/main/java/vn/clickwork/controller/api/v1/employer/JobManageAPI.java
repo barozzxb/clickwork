@@ -4,8 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import vn.clickwork.entity.Address;
 import vn.clickwork.entity.Employer;
 import vn.clickwork.enumeration.EJobType;
 import vn.clickwork.model.Response;
@@ -14,6 +18,7 @@ import vn.clickwork.model.dto.JobDTO;
 import vn.clickwork.model.request.JobFilterRequest;
 import vn.clickwork.model.request.PageRequest;
 import vn.clickwork.repository.EmployerRepository;
+import vn.clickwork.service.EmployerService;
 import vn.clickwork.service.JobService;
 
 import java.util.logging.Logger;
@@ -31,6 +36,9 @@ public class JobManageAPI {
     @Autowired
     EmployerRepository employerRepository;
 
+    @Autowired
+    EmployerService employerService;
+
     @GetMapping
     public ResponseEntity<Response> getAllJobs(
             @RequestParam(defaultValue = "0") int page,
@@ -42,27 +50,51 @@ public class JobManageAPI {
     }
 
     @GetMapping("/by-employer")
-    public ResponseEntity<Response> getJobsByEmail(@RequestParam String email) {
-        return jobServ.findByEmployerEmail(email);
+    public ResponseEntity<Response> getJobsByEmployer(
+            @RequestParam(required = false) String email,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            // Nếu không có email trong request param, lấy từ token
+            if (email == null || email.isEmpty()) {
+                if (userDetails == null) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(new Response(false, "Vui lòng đăng nhập để xem danh sách công việc", null));
+                }
+                // Lấy username từ token
+                String username = userDetails.getUsername();
+                // Sử dụng service để lấy email
+                email = employerService.getEmployerEmailByUsername(username);
+            }
+
+            // Gọi service để lấy danh sách job theo email
+            return jobServ.findByEmployerEmail(email);
+        } catch (UsernameNotFoundException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new Response(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new Response(false, "Lỗi khi lấy danh sách công việc: " + e.getMessage(), null));
+        }
     }
 
     @PostMapping("/add")
-    @PreAuthorize("hasRole('EMPLOYER') and #request.email == authentication.principal.username")
-    public ResponseEntity<Response> createJob(@RequestBody JobCreateRequest request) {
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(new Response(false, "Email không được để trống", null));
-        }
-        if (request.getJob() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new Response(false, "Thông tin công việc không được để trống", null));
-        }
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Response> createJob(
+            @RequestBody JobCreateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            Employer employer = employerRepository.findByEmail(request.getEmail());
+            // Lấy username từ token
+            String username = userDetails.getUsername();
+
+            // Sử dụng EmployerService để lấy email
+            String email = employerService.getEmployerEmailByUsername(username);
+
+            // Tìm employer theo email
+            Employer employer = employerRepository.findByEmail(email);
             if (employer == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new Response(false, "Không tìm thấy Employer với email: " + request.getEmail(), null));
+                        .body(new Response(false, "Không tìm thấy Employer với email: " + email, null));
             }
 
             JobDTO jobDTO = request.getJob();
@@ -75,6 +107,7 @@ public class JobManageAPI {
                         .body(new Response(false, "Loại công việc không hợp lệ: " + jobDTO.getJobtype(), null));
             }
             job.setSalary(jobDTO.getSalary());
+            job.setAddress(jobDTO.getAddress());
             job.setTags(jobDTO.getTags());
             job.setDescription(jobDTO.getDescription());
             job.setRequiredskill(jobDTO.getRequiredskill());
@@ -84,12 +117,23 @@ public class JobManageAPI {
             job.setActive(true);
             job.setEmployer(employer);
 
+            // Nếu địa chỉ không được cung cấp nhưng employer có địa chỉ, dùng địa chỉ chính
+            // của employer
+            if ((job.getAddress() == null || job.getAddress().isEmpty()) &&
+                    employer.getAddresses() != null && !employer.getAddresses().isEmpty()) {
+                Address mainAddress = employer.getAddresses().get(0);
+                job.setAddress(getFullAddressString(mainAddress));
+            }
+
             ResponseEntity<Response> response = jobServ.save(job);
             if (response.getStatusCode() == HttpStatus.OK) {
                 JobDTO responseDTO = mapToDTO(job);
                 return ResponseEntity.ok(new Response(true, "Tạo công việc thành công", responseDTO));
             }
             return response;
+        } catch (UsernameNotFoundException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new Response(false, e.getMessage(), null));
         } catch (Exception e) {
             log.severe("Lỗi khi tạo công việc: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -116,6 +160,7 @@ public class JobManageAPI {
                         .body(new Response(false, "Loại công việc không hợp lệ: " + jobDTO.getJobtype(), null));
             }
             job.setSalary(jobDTO.getSalary());
+            job.setAddress(jobDTO.getAddress());
             job.setTags(jobDTO.getTags());
             job.setDescription(jobDTO.getDescription());
             job.setRequiredskill(jobDTO.getRequiredskill());
@@ -158,16 +203,7 @@ public class JobManageAPI {
 
     // DTO để nhận dữ liệu từ request
     public static class JobCreateRequest {
-        private String email;
         private JobDTO job;
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
 
         public JobDTO getJob() {
             return job;
@@ -185,6 +221,7 @@ public class JobManageAPI {
         dto.setJobtype(job.getJobtype() != null ? job.getJobtype().name() : null);
         dto.setCreatedat(job.getCreatedat());
         dto.setSalary(job.getSalary());
+        dto.setAddress(job.getAddress());
         dto.setTags(job.getTags());
         dto.setDescription(job.getDescription());
         dto.setRequiredskill(job.getRequiredskill());
@@ -200,5 +237,37 @@ public class JobManageAPI {
             dto.setEmployer(employerDTO);
         }
         return dto;
+    }
+
+    private String getFullAddressString(Address address) {
+        if (address == null)
+            return null;
+
+        StringBuilder sb = new StringBuilder();
+        if (address.getDetail() != null && !address.getDetail().isEmpty()) {
+            sb.append(address.getDetail());
+        }
+        if (address.getVillage() != null && !address.getVillage().isEmpty()) {
+            if (sb.length() > 0)
+                sb.append(", ");
+            sb.append(address.getVillage());
+        }
+        if (address.getDistrict() != null && !address.getDistrict().isEmpty()) {
+            if (sb.length() > 0)
+                sb.append(", ");
+            sb.append(address.getDistrict());
+        }
+        if (address.getProvince() != null && !address.getProvince().isEmpty()) {
+            if (sb.length() > 0)
+                sb.append(", ");
+            sb.append(address.getProvince());
+        }
+        if (address.getNation() != null && !address.getNation().isEmpty()
+                && !address.getNation().equalsIgnoreCase("Việt Nam")) {
+            if (sb.length() > 0)
+                sb.append(", ");
+            sb.append(address.getNation());
+        }
+        return sb.toString();
     }
 }

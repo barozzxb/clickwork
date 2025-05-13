@@ -16,6 +16,7 @@ public class JobDTO {
 	private String jobtype;
 	private Timestamp createdat;
 	private String salary;
+	private String address;
 	private List<String> tags;
 	private String description;
 	private String requiredskill;

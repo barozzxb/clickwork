@@ -10,7 +10,10 @@ import vn.clickwork.entity.CV;
 
 @Repository
 public interface CVRepository extends JpaRepository<CV, Long> {
-		
+
 	List<CV> findByApplicant(Applicant applicant);
+
+
+	CV findByApplicantAccountUsernameAndIsDefaultTrue(String username);
 
 }

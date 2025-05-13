@@ -9,19 +9,21 @@ import vn.clickwork.entity.JobApplication;
 import java.util.List;
 
 public interface JobApplicationRepository extends JpaRepository<JobApplication, Long> {
-    boolean existsByApplicantAccountUsernameAndJobId(String username, Long jobId);
-    List<JobApplication> findByApplicant(Applicant applicant);
+        boolean existsByApplicantAccountUsernameAndJobId(String username, Long jobId);
 
-    @Query("SELECT ja.status AS status, COUNT(ja) AS count " +
-            "FROM JobApplication ja " +
-            "GROUP BY ja.status")
-    List<Object[]> countApplicationsByStatus();
+        List<JobApplication> findByApplicant(Applicant applicant);
 
-    @Query(value = "SELECT DATE_FORMAT(ja.applied_at, '%Y-%m') AS month, COUNT(*) AS count " +
-            "FROM application ja " +
-            "GROUP BY DATE_FORMAT(ja.applied_at, '%Y-%m') " +
-            "ORDER BY month", 
-            nativeQuery = true)
-    List<Object[]> countApplicationsByMonth();
+        @Query("SELECT ja.status AS status, COUNT(ja) AS count " +
+                        "FROM JobApplication ja " +
+                        "GROUP BY ja.status")
+        List<Object[]> countApplicationsByStatus();
+
+        @Query(value = "SELECT DATE_FORMAT(ja.applied_at, '%Y-%m') AS month, COUNT(*) AS count " +
+                        "FROM application ja " +
+                        "GROUP BY DATE_FORMAT(ja.applied_at, '%Y-%m') " +
+                        "ORDER BY month", nativeQuery = true)
+        List<Object[]> countApplicationsByMonth();
+
+        List<JobApplication> findByJobId(Long jobId);
 
 }

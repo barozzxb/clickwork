@@ -17,4 +17,6 @@ public interface EmployerRepository extends JpaRepository<Employer, Long> {
     Employer findByAccount(Account account);
 
     List<Employer> findByEmailLikeIgnoreCaseOrFullnameLikeIgnoreCase(String searchPattern, String searchPattern1);
+
+    Employer findByAccountUsername(String username);
 }

@@ -16,8 +16,10 @@ public class JobSummaryDTO {
     private String jobtype;
     private Timestamp createdat;
     private String salary;
+    private String address;
     private List<String> tags;
     private String field;
     private boolean isActive;
     private EmployerSummaryDTO employer;
+
 }
