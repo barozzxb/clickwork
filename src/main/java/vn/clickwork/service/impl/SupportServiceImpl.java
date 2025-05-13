@@ -3,7 +3,6 @@ package vn.clickwork.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import vn.clickwork.dto.SupportRequestDTO;
 import vn.clickwork.entity.Support;
 import vn.clickwork.entity.Applicant;
 import vn.clickwork.entity.Employer;
@@ -37,6 +36,7 @@ import org.springframework.security.core.Authentication;
 import vn.clickwork.entity.Notification;
 import vn.clickwork.entity.Admin;
 import vn.clickwork.enumeration.ENotiType;
+import vn.clickwork.model.dto.SupportRequestDTO;
 import vn.clickwork.model.dto.SupportResponseDTO;
 import vn.clickwork.model.request.SupportResponseRequest;
 import vn.clickwork.repository.NotificationRepository;
@@ -328,4 +328,3 @@ public class SupportServiceImpl implements SupportService {
         return new Response(true, message, mapToDTO(support));
     }
 }
-

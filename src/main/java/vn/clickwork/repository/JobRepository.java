@@ -78,4 +78,5 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 		   "GROUP BY FUNCTION('DATE_FORMAT', j.createdat, '%Y-%m') " +
 		   "ORDER BY month")
 	List<Object[]> countJobsByMonth();
+
 }

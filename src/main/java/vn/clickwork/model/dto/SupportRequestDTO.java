@@ -1,4 +1,4 @@
-package vn.clickwork.dto;
+package vn.clickwork.model.dto;
 
 import java.sql.Timestamp;
 import vn.clickwork.enumeration.EResponseStatus;

@@ -1,4 +1,4 @@
-package vn.clickwork.dto;
+package vn.clickwork.model.dto;
 
 import lombok.Data;
 

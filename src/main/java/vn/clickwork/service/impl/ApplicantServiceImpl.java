@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import vn.clickwork.dto.SupportRequestDTO;
 import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Admin;
 import vn.clickwork.entity.Applicant;
@@ -25,6 +24,7 @@ import vn.clickwork.entity.CV;
 import vn.clickwork.entity.Employer;
 import vn.clickwork.entity.Support;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.SupportRequestDTO;
 import vn.clickwork.model.request.ApplicantDetailRequest;
 import vn.clickwork.model.request.ChangePasswordRequest;
 import vn.clickwork.repository.AccountRepository;
@@ -169,48 +169,50 @@ public class ApplicantServiceImpl implements ApplicantService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new Response(false, "Lỗi khi upload ảnh", null));
         }
-    }
 
-    @Override
-    @Transactional
-    public ResponseEntity<Response> requestSupport(SupportRequestDTO supportRequestDTO) {
-        // Tìm ứng viên theo username
-    	Applicant applicant = applicantRepo.findByAccount_Username(supportRequestDTO.getApplicantUsername());
-        if (applicant == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(new Response(false, "Không tìm thấy ứng viên", null));
-        }
-
-        // Tìm employer và admin nếu cần thiết
-        Employer employer = employerService.findByUsername(supportRequestDTO.getEmployerUsername());
-        if (employer == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(new Response(false, "Không tìm thấy employer", null));
-        }
-
-        Admin admin = adminService.findByAccount_Username(supportRequestDTO.getAdminUsername());
-        if (admin == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(new Response(false, "Không tìm thấy admin", null));
-        }
-
-        // Tạo đối tượng Support
-        Support support = new Support();
-        support.setTitle(supportRequestDTO.getTitle());
-        support.setContent(supportRequestDTO.getContent());
-        support.setSendat(supportRequestDTO.getSendat());
-        support.setStatus(supportRequestDTO.getStatus());
-        support.setApplicant(applicant);
-        support.setEmployer(employer);
-        support.setAdmin(admin);
-
-        // Lưu yêu cầu hỗ trợ vào cơ sở dữ liệu
-        supportRepository.save(support);
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                             .body(new Response(true, "Yêu cầu hỗ trợ đã được tạo thành công", support));
     }
 
 	
 
 }
+
+//    @Override
+//    @Transactional
+//    public ResponseEntity<Response> requestSupport(SupportRequestDTO supportRequestDTO) {
+//        // Tìm ứng viên theo username
+//    	Applicant applicant = applicantRepo.findByAccount_Username(supportRequestDTO.getApplicantUsername());
+//        if (applicant == null) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                                 .body(new Response(false, "Không tìm thấy ứng viên", null));
+//        }
+//
+//        // Tìm employer và admin nếu cần thiết
+//        Employer employer = employerService.findByUsername(supportRequestDTO.getEmployerUsername());
+//        if (employer == null) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                                 .body(new Response(false, "Không tìm thấy employer", null));
+//        }
+//
+//        Admin admin = adminService.findByAccount_Username(supportRequestDTO.getAdminUsername());
+//        if (admin == null) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                                 .body(new Response(false, "Không tìm thấy admin", null));
+//        }
+
+        // Tạo đối tượng Support
+//        Support support = new Support();
+//        support.setTitle(supportRequestDTO.getTitle());
+//        support.setContent(supportRequestDTO.getContent());
+//        support.setSendat(supportRequestDTO.getSendat());
+//        support.setStatus(supportRequestDTO.getStatus());
+//        support.setApplicant(applicant);
+//        support.setEmployer(employer);
+//        support.setAdmin(admin);
+//
+//        // Lưu yêu cầu hỗ trợ vào cơ sở dữ liệu
+//        supportRepository.save(support);
+//
+//        return ResponseEntity.status(HttpStatus.CREATED)
+//                             .body(new Response(true, "Yêu cầu hỗ trợ đã được tạo thành công", support));
+//    }
+//}
