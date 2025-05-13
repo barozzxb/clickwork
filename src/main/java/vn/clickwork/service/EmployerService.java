@@ -22,7 +22,14 @@ public interface EmployerService {
 
     String getEmployerEmailByUsername(String username);
 
-    Response getProfile(String username);
+    EmployerProfileDTO getProfile(String username);
 
-    Response updateProfile(String username, EmployerProfileDTO dto);
+    void updateProfile(String username, EmployerProfileDTO dto);
+
+    // Address management
+    void addAddress(String username, EmployerProfileDTO.AddressDTO addressDTO);
+
+    void updateAddress(String username, Long addressId, EmployerProfileDTO.AddressDTO addressDTO);
+
+    void deleteAddress(String username, Long addressId);
 }
