@@ -66,4 +66,6 @@ public interface AccountService {
 
 	Response createReport(ReportRequestDTO dto, String senderUsername);
 
+	ResponseEntity<Response> activeAccount(String username);
+
 }

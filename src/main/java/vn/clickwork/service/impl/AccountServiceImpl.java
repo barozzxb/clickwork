@@ -1116,6 +1116,27 @@ public class AccountServiceImpl implements AccountService {
 		}
 	}
 
+	@Override
+	public ResponseEntity<Response> activeAccount(String username) {
+		try {
+			Optional<Account> optaccount = accRepo.findById(username);
+			if (optaccount.isEmpty()) {
+				return ResponseEntity.ok()
+						.body(new Response(false, "Tài khoản không tồn tại", null));
+			}
+			Account account = optaccount.get();
+
+			account.setStatus(EAccountStatus.ACTIVE);
+			accRepo.save(account);
+
+			return ResponseEntity.ok().body(new Response(true, "Kích hoạt tài khoản thành công", null));
+		} catch (Exception e) {
+			logger.error("Lỗi khi kích hoạt tài khoản: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new Response(false, "Kích hoạt tài khoản thất bại", null));
+		}
+	}
+
 	// Phương thức gửi thông báo đến tất cả admin
 	private void sendReportNotificationToAdmins(Report report) {
 		try {
