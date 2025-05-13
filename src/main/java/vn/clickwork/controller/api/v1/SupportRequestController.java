@@ -2,7 +2,7 @@ package vn.clickwork.controller.api.v1;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.clickwork.dto.SupportRequestDTO;
+import vn.clickwork.model.dto.SupportRequestDTO;
 import vn.clickwork.model.Response;
 import vn.clickwork.service.SupportService;
 import vn.clickwork.util.JwtUtils;
