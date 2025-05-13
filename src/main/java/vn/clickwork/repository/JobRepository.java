@@ -2,6 +2,10 @@ package vn.clickwork.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+import java.util.Collections;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 
 import vn.clickwork.enumeration.EJobType;
 import vn.clickwork.model.dto.JobFieldCountDTO;
+import vn.clickwork.model.dto.JobStatsDTO;
 
 @Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
@@ -67,4 +72,11 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
 	@Query("SELECT j FROM Job j JOIN FETCH j.employer e LEFT JOIN FETCH e.addresses")
 	Page<Job> findAllWithEmployerAndAddresses(Pageable pageable);
+
+	@Query("SELECT FUNCTION('DATE_FORMAT', j.createdat, '%Y-%m') as month, COUNT(j) as count " +
+		   "FROM Job j " +
+		   "GROUP BY FUNCTION('DATE_FORMAT', j.createdat, '%Y-%m') " +
+		   "ORDER BY month")
+	List<Object[]> countJobsByMonth();
+
 }
