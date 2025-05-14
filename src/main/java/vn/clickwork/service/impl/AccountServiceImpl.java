@@ -156,7 +156,9 @@ public class AccountServiceImpl implements AccountService {
 				data.put("status", acc.getStatus());
 				return new Response(true, "Đăng nhập thành công", data);
 			} else {
-				return new Response(false, "Sai thông tin đăng nhập", null);
+				HashMap<String, Object> data = new HashMap<>();
+				data.put("accStatus", acc.getStatus());
+				return new Response(false, "Sai thông tin đăng nhập", data);
 			}
 		}
 		return new Response(false, "Tài khoản không tồn tại, vui lòng thử lại hoặc tạo tài khoản mới", null);
@@ -201,7 +203,9 @@ public class AccountServiceImpl implements AccountService {
 			acc.setAdmin(admin);
 		}
 		accRepo.save(acc);
-		return new Response(true, "Đăng ký thành công", acc);
+		HashMap<String, Object> data = new HashMap<>();
+		data.put("accStatus", acc.getStatus());
+		return new Response(true, "Đăng ký thành công", data);
 	}
 
 	@Override
@@ -1031,7 +1035,8 @@ public class AccountServiceImpl implements AccountService {
 	@Override
 	public ResponseEntity<Response> activeAccount(String username) {
 		try {
-			Optional<Account> optaccount = accRepo.findById(username);
+			username = username.replaceAll("\"", "");
+			Optional<Account> optaccount = accRepo.findByUsername(username);
 			if (optaccount.isEmpty()) {
 				return ResponseEntity.ok()
 						.body(new Response(false, "Tài khoản không tồn tại", null));
