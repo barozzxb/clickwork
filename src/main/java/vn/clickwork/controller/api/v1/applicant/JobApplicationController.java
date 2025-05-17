@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.JobApplicationDTO;
 import vn.clickwork.model.dto.JobApplicationResponseDTO;
 import vn.clickwork.model.request.ApplicationRequest;
 import vn.clickwork.service.JobApplicationService;
@@ -34,7 +35,8 @@ public class JobApplicationController {
     }
 
     @GetMapping("/history/{username}")
-    public List<JobApplicationResponseDTO> getApplicationHistory(@PathVariable String username) {
-        return jobApplicationService.getApplicationsByApplicant(username);
+    public Response getApplicationHistory(@PathVariable String username) {
+ 
+        return new Response(true,"Lấy danh sách thành công" , jobApplicationService.getApplicationsByApplicant(username));
     }
 }

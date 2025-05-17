@@ -23,17 +23,15 @@ import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import vn.clickwork.entity.Account;
-import vn.clickwork.entity.Applicant;
-import vn.clickwork.entity.Employer;
-import vn.clickwork.entity.Admin;
-import vn.clickwork.entity.Report;
+import vn.clickwork.entity.*;
 import vn.clickwork.enumeration.EAccountStatus;
+import vn.clickwork.enumeration.ENotiType;
 import vn.clickwork.enumeration.EResponseStatus;
 import vn.clickwork.enumeration.ERole;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.dto.AccountDTO;
 import vn.clickwork.model.dto.ReportDTO;
+import vn.clickwork.model.dto.ReportRequestDTO;
 import vn.clickwork.model.request.ChangePasswordRequest;
 import vn.clickwork.model.request.LoginRequest;
 import vn.clickwork.model.request.RegisterRequest;
@@ -46,6 +44,7 @@ import vn.clickwork.repository.ApplicantRepository;
 import vn.clickwork.repository.EmployerRepository;
 import vn.clickwork.repository.AdminRepository;
 import vn.clickwork.repository.ReportRepository;
+import vn.clickwork.repository.NotificationRepository;
 import vn.clickwork.service.AccountService;
 import vn.clickwork.util.JwtUtils;
 import vn.clickwork.util.PasswordUtil;
@@ -71,6 +70,9 @@ public class AccountServiceImpl implements AccountService {
 
 	@Autowired
 	ReportRepository reportRepository;
+
+	@Autowired
+	NotificationRepository notificationRepository;
 
 	@Autowired
 	PasswordUtil passwordUtil;
@@ -117,7 +119,7 @@ public class AccountServiceImpl implements AccountService {
 
 	@Override
 	public Response login(LoginRequest loginModel) {
-		
+
 		if (loginModel.getUsername() == null || loginModel.getPassword() == null) {
 			return new Response(false, "Vui lòng nhập đầy đủ thông tin đăng nhập", null);
 		}
@@ -126,22 +128,39 @@ public class AccountServiceImpl implements AccountService {
 		if (optAcc.isPresent()) {
 			Account acc = optAcc.get();
 
-			if (acc.getStatus() == EAccountStatus.SUSPENDED) {
-				String suspendedUntilMessage = "";
-				if (acc.getSuspendedUntil() != null) {
-					suspendedUntilMessage = " đến " + acc.getSuspendedUntil().toString();
-				}
-				return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, null);
-			}
+			
+			
 
 			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword())) {
+				
+				if (acc.getStatus() == EAccountStatus.INACTIVE) {
+					
+					HashMap<String, Object> data = new HashMap<>();
+					data.put("accStatus", acc.getStatus());
+					
+					return new Response(false, "Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để kích hoạt tài khoản",
+							data);
+				}
+				
+				if (acc.getStatus() == EAccountStatus.SUSPENDED) {
+					String suspendedUntilMessage = "";
+					HashMap<String, Object> data = new HashMap<>();
+					if (acc.getSuspendedUntil() != null) {
+						suspendedUntilMessage = " đến " + acc.getSuspendedUntil().toString();
+						data.put("accStatus", acc.getStatus());
+					}
+					return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, data);
+				}
+				
 				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
 				Map<String, Object> data = new HashMap<>();
 				data.put("token", token);
 				data.put("status", acc.getStatus());
 				return new Response(true, "Đăng nhập thành công", data);
 			} else {
-				return new Response(false, "Sai thông tin đăng nhập", null);
+				HashMap<String, Object> data = new HashMap<>();
+				data.put("accStatus", acc.getStatus());
+				return new Response(false, "Sai thông tin đăng nhập", data);
 			}
 		}
 		return new Response(false, "Tài khoản không tồn tại, vui lòng thử lại hoặc tạo tài khoản mới", null);
@@ -186,7 +205,9 @@ public class AccountServiceImpl implements AccountService {
 			acc.setAdmin(admin);
 		}
 		accRepo.save(acc);
-		return new Response(true, "Đăng ký thành công", acc);
+		HashMap<String, Object> data = new HashMap<>();
+		data.put("accStatus", acc.getStatus());
+		return new Response(true, "Đăng ký thành công", data);
 	}
 
 	@Override
@@ -999,17 +1020,167 @@ public class AccountServiceImpl implements AccountService {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 						.body(new Response(false, "Mật khẩu mới không được giống mật khẩu cũ", null));
 			}
-			
+
 			Account acc = account.get();
-			
+
 			acc.setPassword(passwordUtil.hashPassword(request.getNewPassword()));
 			accRepo.save(acc);
 			return ResponseEntity.ok(new Response(true, "Đổi mật khẩu thành công", null));
-			
+
 		} catch (Exception e) {
 			logger.error("Lỗi khi đổi mật khẩu: {}", e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new Response(false, "Không thể đổi mật khẩu: " + e.getMessage(), null));
+		}
+	}
+
+	@Override
+	public Response createReport(ReportRequestDTO dto, String senderUsername) {
+		try {
+			logger.info("Creating new report from user: {}", senderUsername);
+
+			// Validate
+			if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+				return new Response(false, "Tiêu đề không được để trống", null);
+			}
+			if (dto.getContent() == null || dto.getContent().trim().isEmpty()) {
+				return new Response(false, "Nội dung không được để trống", null);
+			}
+			if (dto.getReportedUsername() == null || dto.getReportedUsername().trim().isEmpty()) {
+				return new Response(false, "Không tìm thấy thông tin người bị báo cáo", null);
+			}
+
+			// Tạo báo cáo mới
+			Report report = new Report();
+			report.setTitle(dto.getTitle());
+			report.setContent(dto.getContent());
+			report.setSendat(new Timestamp(System.currentTimeMillis()));
+			report.setStatus(EResponseStatus.PENDING);
+
+			// Tìm thông tin người gửi báo cáo
+			Optional<Account> senderAccount = accRepo.findByUsername(senderUsername);
+			if (senderAccount.isEmpty()) {
+				return new Response(false, "Không tìm thấy thông tin người gửi báo cáo", null);
+			}
+
+			// Tìm thông tin người bị báo cáo
+			Optional<Account> reportedAccount = accRepo.findByUsername(dto.getReportedUsername());
+			if (reportedAccount.isEmpty()) {
+				return new Response(false, "Không tìm thấy thông tin người bị báo cáo", null);
+			}
+
+			// Xác định và thiết lập người gửi/người bị báo cáo
+			Account sender = senderAccount.get();
+			Account reported = reportedAccount.get();
+
+			if (sender.getRole() == ERole.APPLICANT) {
+				Applicant applicant = appRepo.findByAccount_Username(senderUsername);
+				if (applicant == null) {
+					return new Response(false, "Không tìm thấy thông tin ứng viên", null);
+				}
+				report.setApplicant(applicant);
+			} else if (sender.getRole() == ERole.EMPLOYER) {
+				Employer employer = empRepo.findByAccount_Username(senderUsername)
+						.orElse(null);
+				if (employer == null) {
+					return new Response(false, "Không tìm thấy thông tin nhà tuyển dụng", null);
+				}
+				report.setEmployer(employer);
+			} else {
+				return new Response(false, "Vai trò không hợp lệ để tạo báo cáo", null);
+			}
+
+			if (reported.getRole() == ERole.APPLICANT) {
+				Applicant reportedApplicant = appRepo.findByAccount_Username(dto.getReportedUsername());
+				if (reportedApplicant == null) {
+					return new Response(false, "Không tìm thấy thông tin ứng viên bị báo cáo", null);
+				}
+				report.setReportedapplicant(reportedApplicant);
+			} else if (reported.getRole() == ERole.EMPLOYER) {
+				Employer reportedEmployer = empRepo.findByAccount_Username(dto.getReportedUsername())
+						.orElse(null);
+				if (reportedEmployer == null) {
+					return new Response(false, "Không tìm thấy thông tin nhà tuyển dụng bị báo cáo", null);
+				}
+				report.setReportedemployer(reportedEmployer);
+			} else {
+				return new Response(false, "Vai trò không hợp lệ để bị báo cáo", null);
+			}
+
+			// Lưu báo cáo
+			reportRepository.save(report);
+
+			// Gửi thông báo đến tất cả admin
+			sendReportNotificationToAdmins(report);
+
+			return new Response(true, "Báo cáo vi phạm đã được gửi thành công", null);
+		} catch (Exception e) {
+			logger.error("Lỗi khi tạo báo cáo vi phạm: {}", e.getMessage(), e);
+			return new Response(false, "Không thể tạo báo cáo vi phạm: " + e.getMessage(), null);
+		}
+	}
+
+	@Override
+	public ResponseEntity<Response> activeAccount(String username) {
+		try {
+			username = username.replaceAll("\"", "");
+			Optional<Account> optaccount = accRepo.findByUsername(username);
+			if (optaccount.isEmpty()) {
+				return ResponseEntity.ok()
+						.body(new Response(false, "Tài khoản không tồn tại", null));
+			}
+			Account account = optaccount.get();
+
+			account.setStatus(EAccountStatus.ACTIVE);
+			accRepo.save(account);
+
+			return ResponseEntity.ok().body(new Response(true, "Kích hoạt tài khoản thành công", null));
+		} catch (Exception e) {
+			logger.error("Lỗi khi kích hoạt tài khoản: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new Response(false, "Kích hoạt tài khoản thất bại", null));
+		}
+	}
+
+	// Phương thức gửi thông báo đến tất cả admin
+	private void sendReportNotificationToAdmins(Report report) {
+		try {
+			// Lấy danh sách admin
+			List<Admin> admins = adminRepo.findAll();
+			if (admins.isEmpty()) {
+				logger.warn("Không có admin nào trong hệ thống để gửi thông báo");
+				return;
+			}
+
+			// Tạo thông báo
+			Notification notification = new Notification();
+			notification.setTitle("Báo cáo vi phạm mới");
+
+			String reportedUser = report.getReportedapplicant() != null
+					? report.getReportedapplicant().getFullname() + " (Ứng viên)"
+					: report.getReportedemployer() != null
+							? report.getReportedemployer().getFullname() + " (Nhà tuyển dụng)"
+							: "Người dùng";
+
+			String reporterUser = report.getApplicant() != null
+					? report.getApplicant().getFullname() + " (Ứng viên)"
+					: report.getEmployer() != null
+							? report.getEmployer().getFullname() + " (Nhà tuyển dụng)"
+							: "Người dùng";
+
+			notification.setContent(String.format("Báo cáo mới (ID: %d) từ %s về người dùng %s với nội dung: %s",
+					report.getId(), reporterUser, reportedUser, report.getTitle()));
+
+			notification.setType(ENotiType.SYSTEM);
+			notification.setSendat(new Timestamp(System.currentTimeMillis()));
+			notification.setRead(false);
+			notification.setAdmins(admins);
+
+			notificationRepository.save(notification);
+			logger.info("Đã gửi thông báo về báo cáo vi phạm đến {} admin", admins.size());
+		} catch (Exception e) {
+			logger.error("Lỗi khi gửi thông báo đến admin: {}", e.getMessage(), e);
+
 		}
 	}
 }

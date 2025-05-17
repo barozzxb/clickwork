@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
@@ -70,6 +71,7 @@ public class Job implements Serializable{
 	private Employer employer;
 
 	@ManyToOne
+	@JsonBackReference
 	private SaveJob save;
 
 	@OneToMany(mappedBy="job", cascade = CascadeType.ALL, orphanRemoval = true)

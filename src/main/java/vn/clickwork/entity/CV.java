@@ -16,30 +16,34 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Entity
-@Table(name="CV")
-public class CV implements Serializable{
+@Table(name = "CV")
+public class CV implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	
-	@Column(name="name", columnDefinition="nvarchar(255)")
+
+	@Column(name = "name", columnDefinition = "nvarchar(255)")
 	private String name;
-	
-	@Column(name="file", columnDefinition="nvarchar(255)")
+
+	@Column(name = "file", columnDefinition = "nvarchar(255)")
 	private String file;
-	
-	//relationship
-	
+
+	@Column(name = "isdefault")
+	private boolean isDefault = false;
+
+	// relationship
+
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name="username")
+	@JoinColumn(name = "username")
 	@JsonIgnore
 	private Applicant applicant;
-	
+
 }

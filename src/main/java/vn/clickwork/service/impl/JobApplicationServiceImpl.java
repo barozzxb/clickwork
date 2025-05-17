@@ -5,9 +5,11 @@ import org.springframework.stereotype.Service;
 
 import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Applicant;
+import vn.clickwork.entity.Employer;
 import vn.clickwork.entity.Job;
 import vn.clickwork.entity.JobApplication;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.JobApplicationDTO;
 import vn.clickwork.model.dto.JobApplicationResponseDTO;
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.ApplicantRepository;
@@ -75,31 +77,63 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     }
 
     @Override
-    public List<JobApplicationResponseDTO> getApplicationsByApplicant(String username) {
+    public List<JobApplicationDTO> getApplicationsByApplicant(String username) {
         try {
             Optional<Account> acc = accountRepo.findByUsername(username);
             if (!acc.isPresent()) {
                 return Collections.emptyList();
             }
-            Applicant applicant = applicantRepository.findByAccount(acc.get());
-            if (applicant == null) {
-                return Collections.emptyList();
-            }
-            List<JobApplication> applications = jobapplicationRepository.findByApplicant(applicant);
-            return applications.stream().map(this::toDTO).collect(Collectors.toList());
+            Applicant applicant = applicantRepository.findByAccount_Username(username);
+            
+            List<JobApplication> applications = jobapplicationRepository.findByApplicantId(applicant.getId());
+            
+            List<JobApplicationDTO> applicationDTO = applications.stream().map(this::toDTO).toList();
+            
+            return applicationDTO;
         } catch (Exception e) {
             return Collections.emptyList();
         }
     }
 
-    private JobApplicationResponseDTO toDTO(JobApplication application) {
-        JobApplicationResponseDTO dto = new JobApplicationResponseDTO();
-        dto.setApplicationId(application.getId());
-        if (application.getJob() != null) {
-            dto.setJobId(application.getJob().getId());
-            dto.setJobTitle(application.getJob().getName());
+    private JobApplicationDTO toDTO(JobApplication application) {
+        JobApplicationDTO dto = new JobApplicationDTO();
+        if (application == null) {
+            return dto;
         }
-        dto.setAppliedAt(application.getAppliedAt());
+
+        // ID & thời gian ứng tuyển
+        if (application.getId() != null) {
+            dto.setId(application.getId());
+        }
+        if (application.getAppliedAt() != null) {
+            dto.setAppliedAt(application.getAppliedAt());
+        }
+
+        // Thông tin Job
+        Job job = application.getJob();
+        if (job != null) {
+            if (job.getId() != null) {
+                dto.setJobId(job.getId());
+            }
+            dto.setJobName(job.getName()); // nếu name null thì DTO cũng null
+
+            // Thông tin công ty/employer
+            Employer emp = job.getEmployer();
+            if (emp != null) {
+                String company = emp.getFullname();
+                if (company == null && emp.getAccount() != null) {
+                    company = emp.getAccount().getUsername();
+                }
+                dto.setCompanyName(company);
+            }
+        }
+
+        // Trạng thái
+        if (application.getStatus() != null) {
+            dto.setStatus(application.getStatus().getValue());
+        }
+
         return dto;
     }
+
 }

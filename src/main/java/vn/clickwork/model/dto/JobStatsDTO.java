@@ -17,4 +17,5 @@ public class JobStatsDTO {
     private long activeJobs;
     private long inactiveJobs;
     private List<Map<String, Object>> jobsByType;
+    private List<Map<String, Object>> jobsByMonth;
 }

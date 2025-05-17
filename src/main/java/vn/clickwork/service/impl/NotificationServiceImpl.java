@@ -11,10 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.clickwork.entity.Admin;
+import vn.clickwork.entity.Applicant;
 import vn.clickwork.entity.Notification;
+import vn.clickwork.entity.Employer;
+import vn.clickwork.enumeration.ENotiType;
 import vn.clickwork.model.dto.NotificationDTO;
+import vn.clickwork.model.Response;
 import vn.clickwork.repository.AdminRepository;
 import vn.clickwork.repository.NotificationRepository;
+import vn.clickwork.repository.EmployerRepository;
 import vn.clickwork.service.NotificationService;
 
 @Service
@@ -27,6 +32,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Autowired
     private AdminRepository adminRepository;
+
+    @Autowired
+    private EmployerRepository employerRepository;
 
     @Override
     public List<NotificationDTO> getAdminNotifications(String username) {
@@ -132,6 +140,49 @@ public class NotificationServiceImpl implements NotificationService {
         notifications.forEach(notification -> notification.setRead(true));
         notificationRepository.saveAll(notifications);
         logger.info("Successfully marked all notifications as read for admin: {}", username);
+    }
+
+    @Override
+    public void createNotificationForApplicant(Applicant applicant, String content) {
+        Notification notification = new Notification();
+        notification.setTitle("Thông báo tuyển dụng");
+        notification.setContent(content);
+        notification.setType(ENotiType.INFORM);
+        notification.setSendat(new java.sql.Timestamp(System.currentTimeMillis()));
+        notification.setRead(false);
+        notification.setApplicants(List.of(applicant));
+        notificationRepository.save(notification);
+    }
+
+    @Override
+    public Response getEmployerNotifications(String username) {
+        Employer employer = employerRepository.findByAccount_Username(username)
+                .orElse(null);
+        if (employer == null) {
+            return new Response(false, "Không tìm thấy employer", null);
+        }
+        List<NotificationDTO> dtos = employer.getNotifications()
+                .stream()
+                .map(this::mapToNotificationDTO)
+                .collect(Collectors.toList());
+        return new Response(true, "Lấy thông báo thành công", dtos);
+    }
+
+    @Override
+    @Transactional
+    public void markEmployerNotificationAsRead(String username, Long notificationId) {
+        Employer employer = employerRepository.findByAccount_Username(username)
+                .orElseThrow(() -> new RuntimeException("Employer not found"));
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        // Kiểm tra notification có thuộc employer này không
+        if (employer.getNotifications() == null || !employer.getNotifications().contains(notification)) {
+            throw new RuntimeException("Notification does not belong to this employer");
+        }
+
+        notification.setRead(true);
+        notificationRepository.save(notification);
     }
 
     private NotificationDTO mapToNotificationDTO(Notification notification) {
