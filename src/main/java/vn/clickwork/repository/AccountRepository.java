@@ -21,7 +21,7 @@ public interface AccountRepository extends JpaRepository<Account, String>{
 	long countByStatus(Enum<?> status);
 
 	@Query(value = "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count " +
-			"FROM Account " +
+			"FROM account " +
 			"GROUP BY DATE_FORMAT(created_at, '%Y-%m')", nativeQuery = true)
 	List<Object[]> countAccountsByMonth();
 

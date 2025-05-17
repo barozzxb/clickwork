@@ -128,20 +128,18 @@ public class AccountServiceImpl implements AccountService {
 		if (optAcc.isPresent()) {
 			Account acc = optAcc.get();
 
-			
-			
-
 			if (passwordUtil.verifyPassword(loginModel.getPassword(), acc.getPassword())) {
-				
+
 				if (acc.getStatus() == EAccountStatus.INACTIVE) {
-					
+
 					HashMap<String, Object> data = new HashMap<>();
 					data.put("accStatus", acc.getStatus());
-					
-					return new Response(false, "Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để kích hoạt tài khoản",
+
+					return new Response(false,
+							"Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để kích hoạt tài khoản",
 							data);
 				}
-				
+
 				if (acc.getStatus() == EAccountStatus.SUSPENDED) {
 					String suspendedUntilMessage = "";
 					HashMap<String, Object> data = new HashMap<>();
@@ -151,7 +149,7 @@ public class AccountServiceImpl implements AccountService {
 					}
 					return new Response(false, "Tài khoản của bạn đã bị khóa" + suspendedUntilMessage, data);
 				}
-				
+
 				String token = jwtUtils.generateToken(acc.getUsername(), acc.getRole());
 				Map<String, Object> data = new HashMap<>();
 				data.put("token", token);
@@ -263,6 +261,7 @@ public class AccountServiceImpl implements AccountService {
 		dto.setRole(account.getRole().name());
 		dto.setStatus(account.getStatus().name());
 		dto.setCreatedAt(account.getCreatedAt());
+		dto.setSuspendedUntil(account.getSuspendedUntil());
 		long violationCount = 0;
 		if (account.getApplicant() != null) {
 			violationCount += reportRepository.countByReportedapplicant_Account_Username(account.getUsername());
@@ -418,7 +417,7 @@ public class AccountServiceImpl implements AccountService {
 						+ "    <div class=\"content\">" + "      <p>Chào %s,</p>"
 						+ "      <p>Tài khoản của bạn (%s) đã bị khóa do vi phạm chính sách.</p>"
 						+ "      <p>Thời gian khóa: 30 ngày, đến %s.</p>"
-						+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>"
+						+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị vô hiệu hóa vĩnh viễn sau thời gian này.</p>"
 						+ "    </div>" + "    <div class=\"footer\">" + "      © 2025 ClickWork. All rights reserved."
 						+ "    </div>" + "  </div>" + "</body>" + "</html>",
 						account.getApplicant() != null ? account.getApplicant().getFullname()
@@ -451,6 +450,11 @@ public class AccountServiceImpl implements AccountService {
 			if (account.getStatus() != EAccountStatus.SUSPENDED) {
 				return new Response(false, "Tài khoản không ở trạng thái khóa", null);
 			}
+			// Nếu suspendedUntil < thời điểm hiện tại thì không cho mở khóa
+			if (account.getSuspendedUntil() != null
+					&& account.getSuspendedUntil().before(new java.sql.Timestamp(System.currentTimeMillis()))) {
+				return new Response(false, "Tài khoản đã bị vô hiệu hóa do quá hạn khóa", null);
+			}
 
 			account.setStatus(EAccountStatus.ACTIVE);
 			account.setSuspendedUntil(null);
@@ -469,7 +473,20 @@ public class AccountServiceImpl implements AccountService {
 			Account account = accRepo.findById(username).orElseThrow(
 					() -> new IllegalArgumentException("Không tìm thấy tài khoản với username: " + username));
 
+			// Xóa entity liên quan trước (nếu có)
+			if (account.getApplicant() != null) {
+				appRepo.delete(account.getApplicant());
+			}
+			if (account.getEmployer() != null) {
+				empRepo.delete(account.getEmployer());
+			}
+			if (account.getAdmin() != null) {
+				adminRepo.delete(account.getAdmin());
+			}
+
+			// Sau khi đã xóa entity liên quan, xóa Account
 			accRepo.delete(account);
+
 			return new Response(true, "Xóa tài khoản thành công", null);
 		} catch (Exception e) {
 			logger.error("Lỗi khi xóa tài khoản: {}", e.getMessage(), e);
@@ -594,7 +611,7 @@ public class AccountServiceImpl implements AccountService {
 								+ "    <div class=\"content\">" + "      <p>Chào %s,</p>"
 								+ "      <p>Tài khoản của bạn (%s) đã bị khóa do vi phạm chính sách (%s).</p>"
 								+ "      <p>Thời gian khóa: 30 ngày, đến %s.</p>"
-								+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>"
+								+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị vô hiệu hóa vĩnh viễn sau thời gian này.</p>"
 								+ "    </div>" + "    <div class=\"footer\">"
 								+ "      © 2025 ClickWork. All rights reserved." + "    </div>" + "  </div>" + "</body>"
 								+ "</html>",
@@ -641,34 +658,54 @@ public class AccountServiceImpl implements AccountService {
 				try {
 					EAccountStatus newStatus = EAccountStatus.valueOf(status.toUpperCase());
 					if (account.getStatus() != newStatus) {
+						// Kiểm tra nếu tài khoản đang SUSPENDED và suspendedUntil đã hết hạn
+						if (account.getStatus() == EAccountStatus.SUSPENDED && account.getSuspendedUntil() != null
+								&& account.getSuspendedUntil().before(new java.sql.Timestamp(System.currentTimeMillis()))) {
+							return new Response(false, "Tài khoản đã bị vô hiệu hóa do quá hạn khóa", null);
+						}
+
 						if (newStatus == EAccountStatus.SUSPENDED) {
 							account.setSuspendedUntil(
 									new Timestamp(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 							// Send email notification
 							String email = account.getApplicant() != null ? account.getApplicant().getEmail()
 									: account.getEmployer() != null ? account.getEmployer().getEmail()
-											: account.getAdmin() != null ? account.getAdmin().getEmail() : null;
+									: account.getAdmin() != null ? account.getAdmin().getEmail() : null;
 
 							if (email != null && !email.trim().isEmpty() && EMAIL_PATTERN.matcher(email).matches()) {
-								String emailContent = String.format("<!DOCTYPE html>" + "<html lang=\"en\">" + "<head>"
-										+ "  <meta charset=\"UTF-8\"/>" + "  <style>"
-										+ "    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
-										+ "    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
-										+ "    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
-										+ "    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
-										+ "  </style>" + "</head>" + "<body>" + "  <div class=\"container\">"
-										+ "    <div class=\"header\">" + "      <h2>ClickWork</h2>" + "    </div>"
-										+ "    <div class=\"content\">" + "      <p>Chào %s,</p>"
-										+ "      <p>Tài khoản của bạn (%s) đã bị khóa do quyết định của quản trị viên.</p>"
-										+ "      <p>Thời gian khóa: 30 ngày, đến %s.</p>"
-										+ "      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị xóa sau thời gian này.</p>"
-										+ "    </div>" + "    <div class=\"footer\">"
-										+ "      © 2025 ClickWork. All rights reserved." + "    </div>" + "  </div>"
-										+ "</body>" + "</html>",
+								String emailContent = String.format(
+										"<!DOCTYPE html>" +
+												"<html lang=\"en\">" +
+												"<head>" +
+												"  <meta charset=\"UTF-8\"/>" +
+												"  <style>" +
+												"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
+												"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
+												"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
+												"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
+												"  </style>" +
+												"</head>" +
+												"<body>" +
+												"  <div class=\"container\">" +
+												"    <div class=\"header\">" +
+												"      <h2>ClickWork</h2>" +
+												"    </div>" +
+												"    <div class=\"content\">" +
+												"      <p>Chào %s,</p>" +
+												"      <p>Tài khoản của bạn (%s) đã bị khóa do quyết định của quản trị viên.</p>" +
+												"      <p>Thời gian khóa: 30 ngày, đến %s.</p>" +
+												"      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị vô hiệu hóa vĩnh viễn sau thời gian này.</p>" +
+												"    </div>" +
+												"    <div class=\"footer\">" +
+												"      © 2025 ClickWork. All rights reserved." +
+												"    </div>" +
+												"  </div>" +
+												"</body>" +
+												"</html>",
 										account.getApplicant() != null ? account.getApplicant().getFullname()
 												: account.getEmployer() != null ? account.getEmployer().getFullname()
-														: account.getAdmin() != null ? account.getAdmin().getFullname()
-																: "Người dùng",
+												: account.getAdmin() != null ? account.getAdmin().getFullname()
+												: "Người dùng",
 										username, account.getSuspendedUntil().toString());
 								try {
 									emailService.sendEmail(email, "Thông báo khóa tài khoản", emailContent);
