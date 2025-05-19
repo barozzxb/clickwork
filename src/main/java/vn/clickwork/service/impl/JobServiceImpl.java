@@ -43,10 +43,13 @@ public class JobServiceImpl implements JobService {
 	public ResponseEntity<Response> save(Job entity) {
 		try {
 			jobRepo.save(entity);
-			return new ResponseEntity<Response>(new Response(true, "Cập nhật công việc thành công", entity), HttpStatus.OK);
+			return new ResponseEntity<Response>(new Response(true, "Cập nhật công việc thành công", entity),
+					HttpStatus.OK);
 		} catch (Exception e) {
 			log.severe("Lỗi khi lưu công việc: " + e.getMessage());
-			return new ResponseEntity<Response>(new Response(false, "Cập nhật công việc thất bại: " + e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<Response>(
+					new Response(false, "Cập nhật công việc thất bại: " + e.getMessage(), null),
+					HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -65,10 +68,8 @@ public class JobServiceImpl implements JobService {
 		Pageable pageable = PageRequest.of(
 				pageRequest.getPage(),
 				pageRequest.getSize(),
-				Sort.by(pageRequest.getSortDir().equalsIgnoreCase("asc") ?
-								Sort.Direction.ASC : Sort.Direction.DESC,
-						pageRequest.getSortBy())
-		);
+				Sort.by(pageRequest.getSortDir().equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC,
+						pageRequest.getSortBy()));
 
 		Page<Job> page = jobRepo.findAll(pageable);
 
@@ -82,13 +83,11 @@ public class JobServiceImpl implements JobService {
 				page.getSize(),
 				page.getTotalElements(),
 				page.getTotalPages(),
-				page.isLast()
-		);
+				page.isLast());
 
 		return new ResponseEntity<Response>(
 				new Response(true, "Lấy dữ liệu thành công", pageResponse),
-				HttpStatus.OK
-		);
+				HttpStatus.OK);
 	}
 
 	@Override
@@ -98,7 +97,8 @@ public class JobServiceImpl implements JobService {
 			JobDTO jobDTO = mapToDTO(optJob.get());
 			return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTO), HttpStatus.OK);
 		} else {
-			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy công việc", null), HttpStatus.NOT_FOUND);
+			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy công việc", null),
+					HttpStatus.NOT_FOUND);
 		}
 	}
 
@@ -121,7 +121,8 @@ public class JobServiceImpl implements JobService {
 	public ResponseEntity<Response> findByTags(String tag) {
 		List<Job> jobs = jobRepo.findByTags(tag);
 		if (jobs.isEmpty()) {
-			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy công việc với tag này", null), HttpStatus.NOT_FOUND);
+			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy công việc với tag này", null),
+					HttpStatus.NOT_FOUND);
 		}
 		List<JobSummaryDTO> jobDTOs = jobs.stream().map(this::mapToSummaryDTO).toList();
 		return new ResponseEntity<Response>(new Response(true, "Lấy dữ liệu thành công", jobDTOs), HttpStatus.OK);
@@ -148,6 +149,7 @@ public class JobServiceImpl implements JobService {
 		existingJob.setBenefit(jobDetails.getBenefit());
 		existingJob.setField(jobDetails.getField());
 		existingJob.setQuantity(jobDetails.getQuantity());
+		existingJob.setAddress(jobDetails.getAddress());
 
 		try {
 			Job updatedJob = jobRepo.save(existingJob);
@@ -185,8 +187,7 @@ public class JobServiceImpl implements JobService {
 				} catch (IllegalArgumentException e) {
 					return new ResponseEntity<>(
 							new Response(false, "Loại công việc không hợp lệ: " + request.getJobType(), null),
-							HttpStatus.BAD_REQUEST
-					);
+							HttpStatus.BAD_REQUEST);
 				}
 			}
 
@@ -248,28 +249,24 @@ public class JobServiceImpl implements JobService {
 						request.getDateTo(),
 						request.getSalaryMin(),
 						request.getSalaryMax(),
-						request.getIsActive()
-				);
+						request.getIsActive());
 			}
 
 			if (jobs.isEmpty()) {
 				return new ResponseEntity<>(
 						new Response(true, "Không tìm thấy công việc phù hợp", null),
-						HttpStatus.OK
-				);
+						HttpStatus.OK);
 			}
 
 			List<JobSummaryDTO> jobDTOs = jobs.stream().map(this::mapToSummaryDTO).toList();
 			return new ResponseEntity<>(
 					new Response(true, "Lấy dữ liệu thành công", jobDTOs),
-					HttpStatus.OK
-			);
+					HttpStatus.OK);
 		} catch (Exception e) {
 			log.severe("Lỗi khi lọc công việc: " + e.getMessage());
 			return new ResponseEntity<>(
 					new Response(false, "Lỗi khi lọc công việc: " + e.getMessage(), null),
-					HttpStatus.INTERNAL_SERVER_ERROR
-			);
+					HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -386,7 +383,8 @@ public class JobServiceImpl implements JobService {
 	}
 
 	private AddressDTO mapToAddressDTO(Address address) {
-		if (address == null) return null;
+		if (address == null)
+			return null;
 
 		AddressDTO dto = new AddressDTO();
 		dto.setId(address.getId());
@@ -399,26 +397,32 @@ public class JobServiceImpl implements JobService {
 	}
 
 	private String getFullAddressString(Address address) {
-		if (address == null) return null;
+		if (address == null)
+			return null;
 
 		StringBuilder sb = new StringBuilder();
 		if (address.getDetail() != null && !address.getDetail().isEmpty()) {
 			sb.append(address.getDetail());
 		}
 		if (address.getVillage() != null && !address.getVillage().isEmpty()) {
-			if (sb.length() > 0) sb.append(", ");
+			if (sb.length() > 0)
+				sb.append(", ");
 			sb.append(address.getVillage());
 		}
 		if (address.getDistrict() != null && !address.getDistrict().isEmpty()) {
-			if (sb.length() > 0) sb.append(", ");
+			if (sb.length() > 0)
+				sb.append(", ");
 			sb.append(address.getDistrict());
 		}
 		if (address.getProvince() != null && !address.getProvince().isEmpty()) {
-			if (sb.length() > 0) sb.append(", ");
+			if (sb.length() > 0)
+				sb.append(", ");
 			sb.append(address.getProvince());
 		}
-		if (address.getNation() != null && !address.getNation().isEmpty() && !address.getNation().equalsIgnoreCase("Việt Nam")) {
-			if (sb.length() > 0) sb.append(", ");
+		if (address.getNation() != null && !address.getNation().isEmpty()
+				&& !address.getNation().equalsIgnoreCase("Việt Nam")) {
+			if (sb.length() > 0)
+				sb.append(", ");
 			sb.append(address.getNation());
 		}
 		return sb.toString();
