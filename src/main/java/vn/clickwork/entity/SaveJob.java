@@ -2,6 +2,9 @@ package vn.clickwork.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 
@@ -20,6 +23,7 @@ public class SaveJob implements Serializable {
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "applicant_id")
+    @JsonManagedReference
     private Applicant applicant;
     
     @ManyToOne
