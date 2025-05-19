@@ -16,4 +16,5 @@ public class JobApplicationDTO {
     private String jobName;
     private Long jobId;
     private String companyName;
+
 }
