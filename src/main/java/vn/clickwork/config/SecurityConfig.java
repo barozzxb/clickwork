@@ -66,7 +66,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/jobs/**").permitAll()
 						.requestMatchers("/uploads/**").permitAll() 
 						.requestMatchers("/api/support/**").permitAll() 
-						.requestMatchers("/api/saved-jobs/**").permitAll() 
+						.requestMatchers("/api/saved-jobs/**").hasRole("APPLICANT")
 						.requestMatchers("/api/applications/**").permitAll() 
 						.requestMatchers("/api/search/**").permitAll()
 						.requestMatchers("/api/applicant/**").hasRole("APPLICANT")

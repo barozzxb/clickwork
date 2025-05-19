@@ -56,9 +56,11 @@ public class Applicant extends User implements Serializable{
     // Thay đổi từ OneToOne thành OneToMany và thêm JsonManagedReference
     @JsonManagedReference
     @OneToMany(mappedBy = "applicant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference
     private List<SaveJob> savedjobs;
     
     @OneToMany(mappedBy = "applicant", cascade = CascadeType.ALL, orphanRemoval = true)
+
     private List<JobApplication> jobApplications;
     
     @OneToMany(mappedBy="applicant")

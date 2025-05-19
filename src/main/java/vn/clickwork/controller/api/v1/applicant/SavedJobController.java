@@ -23,14 +23,6 @@ public class SavedJobController {
     public Response saveJob(@RequestBody ApplicationRequest request) {
         return savedJobService.saveJob(request.getUsername(), request.getId());
     }
-
-    @DeleteMapping("/delete")
-    public Response deleteSavedJob(@AuthenticationPrincipal UserDetails userDetails,
-                                   @RequestParam Long jobId) {
-        String username = userDetails.getUsername(); // Lấy từ JWT
-        return savedJobService.deleteSavedJob(username, jobId);
-    }
-
     @GetMapping("/check")
     public Response checkSavedJob(@AuthenticationPrincipal UserDetails userDetails,
                                   @RequestParam Long jobId) {
@@ -41,9 +33,17 @@ public class SavedJobController {
         }
         return new Response(true, "Công việc chưa được lưu", null);
     }
-    @GetMapping
-    public List<SaveJob> getSavedJobs(@AuthenticationPrincipal UserDetails userDetails) {
+    @DeleteMapping("/delete")
+    public Response deleteSavedJob(@AuthenticationPrincipal UserDetails userDetails,
+                                   @RequestParam Long jobId) {
         String username = userDetails.getUsername(); // Lấy từ JWT
-        return savedJobService.getSavedJobs(username);
+        return savedJobService.deleteSavedJob(username, jobId);
+    }
+
+
+    @GetMapping
+    public Response getSavedJobs(@AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails.getUsername(); // Lấy từ JWT
+        return new Response(true, "Lấy danh sách thành công",savedJobService.getSavedJobs(username));
     }
 }

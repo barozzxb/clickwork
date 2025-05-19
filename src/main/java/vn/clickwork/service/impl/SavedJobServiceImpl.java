@@ -12,6 +12,7 @@ import vn.clickwork.repository.JobRepository;
 import vn.clickwork.repository.SavedJobRepository;
 import vn.clickwork.service.SavedJobService;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.SavedJobDTO;
 
 import java.sql.Timestamp;
 import java.util.Collections;
@@ -77,7 +78,7 @@ public class SavedJobServiceImpl implements SavedJobService {
     }
 
     @Override
-    public List<SaveJob> getSavedJobs(String applicantUsername) {
+    public List<SavedJobDTO> getSavedJobs(String applicantUsername) {
         try {
             Optional<Account> acc = accountRepo.findByUsername(applicantUsername);
             if (!acc.isPresent()) {
@@ -87,7 +88,10 @@ public class SavedJobServiceImpl implements SavedJobService {
             if (applicant == null) {
                 return Collections.emptyList();
             }
-            return savedJobRepository.findByApplicant(applicant);
+            
+            List<SaveJob> savedJob = savedJobRepository.findByApplicant(applicant);
+            List<SavedJobDTO> listSavedDTO = savedJob.stream().map(this::mapToDTO).toList();
+            return listSavedDTO;
         } catch (Exception e) {
             return Collections.emptyList();
         }
@@ -101,4 +105,19 @@ public class SavedJobServiceImpl implements SavedJobService {
             return false;
         }
     }
+    
+    private SavedJobDTO mapToDTO(SaveJob savedJob) {
+    	SavedJobDTO dto = new SavedJobDTO();
+    	
+    	dto.setId(savedJob.getId());
+    	dto.setJobId(savedJob.getJob().getId());
+    	dto.setType(savedJob.getJob().getJobtype().getValue());
+    	dto.setSavedDate(savedJob.getSavedAt());
+    	dto.setTitle(savedJob.getJob().getName());
+    	dto.setField(savedJob.getJob().getField());
+    	
+    	
+    	return dto;
+    }
+    
 }
