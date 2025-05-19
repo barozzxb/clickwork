@@ -292,20 +292,55 @@ public class AccountServiceImpl implements AccountService {
 		dto.setContent(report.getContent());
 		dto.setSendat(report.getSendat());
 		dto.setStatus(report.getStatus().name());
-		if (report.getApplicant() != null) {
-			dto.setSenderName(report.getApplicant().getFullname());
-			dto.setSenderEmail(report.getApplicant().getEmail());
-		} else if (report.getEmployer() != null) {
-			dto.setSenderName(report.getEmployer().getFullname());
-			dto.setSenderEmail(report.getEmployer().getEmail());
+
+		// Truy xuất thông tin người gửi báo cáo
+		try {
+			if (report.getApplicant() != null) {
+				// Khi trên Railway, có thể cần fetch riêng email và fullname trực tiếp từ
+				// database
+				Applicant applicant = appRepo.findById(report.getApplicant().getId()).orElse(null);
+				if (applicant != null) {
+					dto.setSenderName(applicant.getFullname());
+					dto.setSenderEmail(applicant.getEmail());
+				} else {
+					dto.setSenderEmail(report.getApplicant().getEmail());
+					dto.setSenderName(report.getApplicant().getFullname());
+				}
+			} else if (report.getEmployer() != null) {
+				Employer employer = empRepo.findById(report.getEmployer().getId()).orElse(null);
+				if (employer != null) {
+					dto.setSenderName(employer.getFullname());
+					dto.setSenderEmail(employer.getEmail());
+				} else {
+					dto.setSenderEmail(report.getEmployer().getEmail());
+					dto.setSenderName(report.getEmployer().getFullname());
+				}
+			}
+
+			// Truy xuất thông tin người bị báo cáo
+			if (report.getReportedapplicant() != null) {
+				Applicant reportedApplicant = appRepo.findById(report.getReportedapplicant().getId()).orElse(null);
+				if (reportedApplicant != null) {
+					dto.setReportedName(reportedApplicant.getFullname());
+					dto.setReportedEmail(reportedApplicant.getEmail());
+				} else {
+					dto.setReportedEmail(report.getReportedapplicant().getEmail());
+					dto.setReportedName(report.getReportedapplicant().getFullname());
+				}
+			} else if (report.getReportedemployer() != null) {
+				Employer reportedEmployer = empRepo.findById(report.getReportedemployer().getId()).orElse(null);
+				if (reportedEmployer != null) {
+					dto.setReportedName(reportedEmployer.getFullname());
+					dto.setReportedEmail(reportedEmployer.getEmail());
+				} else {
+					dto.setReportedEmail(report.getReportedemployer().getEmail());
+					dto.setReportedName(report.getReportedemployer().getFullname());
+				}
+			}
+		} catch (Exception e) {
+			logger.warn("Không thể truy xuất thông tin người gửi/người nhận báo cáo: {}", e.getMessage());
 		}
-		if (report.getReportedapplicant() != null) {
-			dto.setReportedName(report.getReportedapplicant().getFullname());
-			dto.setReportedEmail(report.getReportedapplicant().getEmail());
-		} else if (report.getReportedemployer() != null) {
-			dto.setReportedName(report.getReportedemployer().getFullname());
-			dto.setReportedEmail(report.getReportedemployer().getEmail());
-		}
+
 		return dto;
 	}
 
@@ -660,7 +695,8 @@ public class AccountServiceImpl implements AccountService {
 					if (account.getStatus() != newStatus) {
 						// Kiểm tra nếu tài khoản đang SUSPENDED và suspendedUntil đã hết hạn
 						if (account.getStatus() == EAccountStatus.SUSPENDED && account.getSuspendedUntil() != null
-								&& account.getSuspendedUntil().before(new java.sql.Timestamp(System.currentTimeMillis()))) {
+								&& account.getSuspendedUntil()
+										.before(new java.sql.Timestamp(System.currentTimeMillis()))) {
 							return new Response(false, "Tài khoản đã bị vô hiệu hóa do quá hạn khóa", null);
 						}
 
@@ -670,7 +706,7 @@ public class AccountServiceImpl implements AccountService {
 							// Send email notification
 							String email = account.getApplicant() != null ? account.getApplicant().getEmail()
 									: account.getEmployer() != null ? account.getEmployer().getEmail()
-									: account.getAdmin() != null ? account.getAdmin().getEmail() : null;
+											: account.getAdmin() != null ? account.getAdmin().getEmail() : null;
 
 							if (email != null && !email.trim().isEmpty() && EMAIL_PATTERN.matcher(email).matches()) {
 								String emailContent = String.format(
@@ -679,10 +715,14 @@ public class AccountServiceImpl implements AccountService {
 												"<head>" +
 												"  <meta charset=\"UTF-8\"/>" +
 												"  <style>" +
-												"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }" +
-												"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }" +
-												"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }" +
-												"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }" +
+												"    .container { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }"
+												+
+												"    .header { background-color: #2196F3; color: white; padding: 10px; text-align: center; border-radius: 4px 4px 0 0; }"
+												+
+												"    .content { background-color: white; padding: 20px; border: 1px solid #ddd; border-top: none; }"
+												+
+												"    .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }"
+												+
 												"  </style>" +
 												"</head>" +
 												"<body>" +
@@ -692,9 +732,11 @@ public class AccountServiceImpl implements AccountService {
 												"    </div>" +
 												"    <div class=\"content\">" +
 												"      <p>Chào %s,</p>" +
-												"      <p>Tài khoản của bạn (%s) đã bị khóa do quyết định của quản trị viên.</p>" +
+												"      <p>Tài khoản của bạn (%s) đã bị khóa do quyết định của quản trị viên.</p>"
+												+
 												"      <p>Thời gian khóa: 30 ngày, đến %s.</p>" +
-												"      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị vô hiệu hóa vĩnh viễn sau thời gian này.</p>" +
+												"      <p>Nếu không có hành động khắc phục, tài khoản sẽ bị vô hiệu hóa vĩnh viễn sau thời gian này.</p>"
+												+
 												"    </div>" +
 												"    <div class=\"footer\">" +
 												"      © 2025 ClickWork. All rights reserved." +
@@ -704,8 +746,8 @@ public class AccountServiceImpl implements AccountService {
 												"</html>",
 										account.getApplicant() != null ? account.getApplicant().getFullname()
 												: account.getEmployer() != null ? account.getEmployer().getFullname()
-												: account.getAdmin() != null ? account.getAdmin().getFullname()
-												: "Người dùng",
+														: account.getAdmin() != null ? account.getAdmin().getFullname()
+																: "Người dùng",
 										username, account.getSuspendedUntil().toString());
 								try {
 									emailService.sendEmail(email, "Thông báo khóa tài khoản", emailContent);
