@@ -1,5 +1,6 @@
 package vn.clickwork.model.dto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -18,6 +19,8 @@ public class EmployerDTO {
     private String logo;
     private String website;
     private String username;
+    private String field;
+    private LocalDate datefounded;
     // Phương thức tiện ích để lấy địa chỉ chính
     public String getMainAddress() {
         if (addresses != null && !addresses.isEmpty()) {
