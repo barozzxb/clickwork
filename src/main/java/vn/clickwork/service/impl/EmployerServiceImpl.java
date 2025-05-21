@@ -12,6 +12,7 @@ import vn.clickwork.entity.Employer;
 import vn.clickwork.entity.Address;
 import vn.clickwork.model.Response;
 import vn.clickwork.model.request.EmployerDetailRequest;
+import vn.clickwork.model.dto.EmployerDTO;
 import vn.clickwork.model.dto.EmployerProfileDTO;
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.EmployerRepository;
@@ -76,6 +77,31 @@ public class EmployerServiceImpl implements EmployerService {
         Optional<Employer> optional = employerRepository.findByAccount_Username(username);
         return optional.orElse(null);
     }
+    
+    @Override
+    public ResponseEntity<Response> findByEUsername(String username) {
+    	Optional<Employer> optional = employerRepository.findByAccount_Username(username);
+		if (optional.isPresent()) {
+			Employer employer = optional.get();
+			EmployerDTO dto = toDTO(employer);
+			return ResponseEntity.ok(new Response(true, "Lấy thông tin thành công", dto));
+		} else {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(new Response(false, "Không tìm thấy thông tin", null));
+		}
+    }
+
+    private EmployerDTO toDTO(Employer employer) {
+		EmployerDTO dto = new EmployerDTO();
+		dto.setId(employer.getId());
+		dto.setFullname(employer.getFullname());
+		dto.setEmail(employer.getEmail());
+		dto.setPhone(employer.getPhonenum());
+		dto.setLogo(employer.getAvatar());
+		dto.setWebsite(employer.getWebsite());
+		dto.setUsername(employer.getAccount().getUsername());
+		return dto;
+	}
 
     @Override
     public ResponseEntity<Response> updateAvatar(String username, MultipartFile file) {

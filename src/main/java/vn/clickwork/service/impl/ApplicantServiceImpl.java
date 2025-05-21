@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,8 @@ import vn.clickwork.entity.CV;
 import vn.clickwork.entity.Employer;
 import vn.clickwork.entity.Support;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.ApplicantProfileDTO;
+import vn.clickwork.model.dto.CVDTO;
 import vn.clickwork.model.dto.SupportRequestDTO;
 import vn.clickwork.model.request.ApplicantDetailRequest;
 import vn.clickwork.model.request.ChangePasswordRequest;
@@ -127,12 +130,39 @@ public class ApplicantServiceImpl implements ApplicantService {
         }
         Applicant applicant = applicantRepo.findByAccount(acc.get());
         if (applicant != null) {
-            return new ResponseEntity<Response>(new Response(true, "Lấy thông tin thành công", applicant), HttpStatus.OK);
+        	// Chuyển đổi Applicant thành ApplicantProfileDTO
+        	ApplicantProfileDTO applicantProfileDTO = convertToApplicantProfileDTO(applicant);
+            return new ResponseEntity<Response>(new Response(true, "Lấy thông tin thành công", applicantProfileDTO), HttpStatus.OK);
         } else {
             return new ResponseEntity<Response>(new Response(false, "Không tìm thấy thông tin", null), HttpStatus.NOT_FOUND);
         }
     }
 
+    private ApplicantProfileDTO convertToApplicantProfileDTO(Applicant applicant) {
+		ApplicantProfileDTO dto = new ApplicantProfileDTO();
+		dto.setId(applicant.getId());
+		dto.setFullname(applicant.getFullname());
+		dto.setDob(applicant.getDob());
+		dto.setGender(applicant.getGender() != null? applicant.getGender().getValue() : null);
+		dto.setInterested(applicant.getInterested());
+		dto.setPhonenum(applicant.getPhonenum());
+		dto.setEmail(applicant.getEmail());
+		dto.setAvatar(applicant.getAvatar());
+		dto.setUsername(applicant.getAccount().getUsername());
+
+		List<CVDTO> cvDto = new ArrayList<>();
+		for (CV cv : applicant.getCvs()) {
+			CVDTO cvDtoItem = new CVDTO();
+			cvDtoItem.setId(cv.getId());
+			cvDtoItem.setName(cv.getName());
+			cvDtoItem.setFile(cv.getFile());
+			cvDto.add(cvDtoItem);
+		}
+
+		dto.setCvs(cvDto);
+		return dto;
+	}
+    
     @Override
     public ResponseEntity<Response> findByEmail(String email) {
         Applicant applicant = applicantRepo.findByEmail(email);

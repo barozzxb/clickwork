@@ -2,6 +2,8 @@ package vn.clickwork.entity;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -47,6 +49,7 @@ public class Address implements Serializable{
 	
 	@ManyToOne
 	@JoinColumn(name = "applicant_id", referencedColumnName = "id")
+	@JsonBackReference
 	private Applicant applicant;
 	
 	@ManyToOne
