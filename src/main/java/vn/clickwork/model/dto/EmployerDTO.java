@@ -17,7 +17,7 @@ public class EmployerDTO {
     private List<AddressDTO> addresses;
     private String logo;
     private String website;
-
+    private String username;
     // Phương thức tiện ích để lấy địa chỉ chính
     public String getMainAddress() {
         if (addresses != null && !addresses.isEmpty()) {

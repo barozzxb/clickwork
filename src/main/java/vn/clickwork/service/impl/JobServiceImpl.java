@@ -348,7 +348,7 @@ public class JobServiceImpl implements JobService {
 		dto.setId(employer.getId());
 		dto.setFullname(employer.getFullname());
 		dto.setEmail(employer.getEmail());
-
+		dto.setUsername(employer.getAccount().getUsername());
 		dto.setPhone(employer.getPhonenum());
 
 		List<AddressDTO> addressDTOs = new ArrayList<>();

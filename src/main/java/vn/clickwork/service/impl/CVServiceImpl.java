@@ -21,6 +21,7 @@ import vn.clickwork.entity.Account;
 import vn.clickwork.entity.Applicant;
 import vn.clickwork.entity.CV;
 import vn.clickwork.model.Response;
+import vn.clickwork.model.dto.CVDTO;
 import vn.clickwork.repository.AccountRepository;
 import vn.clickwork.repository.ApplicantRepository;
 import vn.clickwork.repository.CVRepository;
@@ -55,9 +56,16 @@ public class CVServiceImpl implements CVService {
 		Applicant applicant = applicantRepository.findByAccount_Username(username);
 		List<CV> cvList = cvRepository.findByApplicant(applicant);
 		if (!cvList.isEmpty()) {
-			return ResponseEntity.ok(new Response(true, "Tải dữ liệu thành công", cvList));
+			List<CVDTO> cvDTOList = cvList.stream().map(cv -> {
+				CVDTO dto = new CVDTO();
+				dto.setId(cv.getId());
+				dto.setName(cv.getName());
+				dto.setFile(cv.getFile());
+				return dto;
+			}).toList();
+			return ResponseEntity.ok(new Response(true, "Tải dữ liệu thành công", cvDTOList));
 		} else {
-			return ResponseEntity.ok(new Response(true, "Tải dữ liệu thành công", cvList));
+			return ResponseEntity.ok(new Response(false, "Tải dữ liệu khong thành công", null));
 		}
 	}
 
@@ -121,4 +129,13 @@ public class CVServiceImpl implements CVService {
 					.body(new Response(false, "Xóa CV thất bại", null));
 		}
 	}
+	
+	private CVDTO toDTO(CV cv) {
+		CVDTO dto = new CVDTO();
+		dto.setId(cv.getId());
+		dto.setName(cv.getName());
+		dto.setFile(cv.getFile());
+		return dto;
+	}
+	
 }
