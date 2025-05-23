@@ -32,4 +32,6 @@ public interface EmployerService {
     void updateAddress(String username, Long addressId, EmployerProfileDTO.AddressDTO addressDTO);
 
     void deleteAddress(String username, Long addressId);
+
+	ResponseEntity<Response> findByEUsername(String username);
 }
